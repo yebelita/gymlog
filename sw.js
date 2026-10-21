@@ -1,7 +1,7 @@
 // Service worker: precachea la app y sirve desde caché (funciona 100% offline).
 // Estrategia stale-while-revalidate: abre al instante desde caché y, si hay red,
 // descarga la versión nueva en segundo plano para la próxima apertura.
-const CACHE = 'gymlog-v1';
+const CACHE = 'gymlog-v2';
 const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
 
 self.addEventListener('install', e => {
@@ -28,5 +28,14 @@ self.addEventListener('fetch', e => {
     }).catch(() => cached);
     if (cached) { e.waitUntil(network); return cached; }
     return network;
+  }));
+});
+
+// Al tocar la notificación de fin de descanso: vuelve a la app abierta o la abre.
+self.addEventListener('notificationclick', e => {
+  e.notification.close();
+  e.waitUntil(self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(cs => {
+    const c = cs.find(c => 'focus' in c);
+    return c ? c.focus() : self.clients.openWindow('./');
   }));
 });

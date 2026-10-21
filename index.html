@@ -227,7 +227,7 @@ function defaultRoutine() {
 }
 
 /* ============ estado y almacenamiento ============ */
-const DEF_SETTINGS = { timerOn: true, useExRest: true, restDefault: 90, vibrate: true, sound: true };
+const DEF_SETTINGS = { timerOn: true, useExRest: true, restDefault: 90, vibrate: true, sound: true, notify: true };
 function blank() { return { v: 1, routine: defaultRoutine(), sessions: [], settings: { ...DEF_SETTINGS }, active: null, lastExport: 0 }; }
 function migrate(d) {
   d.v = 1;
@@ -354,7 +354,7 @@ function startSession(dayId) {
   S.active = { id: uid(), dayId: day ? day.id : null, dayName: day ? dayLabel(day) : 'Sesión libre', start: Date.now(), exercises: day ? day.exercises.map(mkSessEx) : [], cur: { e: 0, s: 0, manual: false }, timer: null };
   const nx = nextPending(0, -1);
   if (nx) S.active.cur = nx;
-  save(); audio(); askPersist(); requestWake();
+  save(); audio(); askPersist(); askNotify(); requestWake();
   view = 'train'; render(); scrollTo(0, 0);
   if (!day) openAddExercise();
 }
@@ -382,6 +382,7 @@ function startRest(ex) {
   const sec = restFor(ex);
   if (!sec) return;
   S.active.timer = { end: Date.now() + sec * 1000, total: sec, fired: false };
+  syncRest();
 }
 function propagate(ex, i) {
   const st = ex.sets[i];
@@ -445,7 +446,7 @@ function finishSession(discard) {
     } else toast('Sesión vacía: no se guardó');
   } else toast('Sesión descartada');
   S.active = null;
-  releaseWake(); save(); closeSheet(); render(); scrollTo(0, 0);
+  syncRest(); releaseWake(); save(); closeSheet(); render(); scrollTo(0, 0);
 }
 
 /* ============ temporizador, sonido, vibración, wake lock ============ */
@@ -472,12 +473,64 @@ function beep() {
 const buzz = p => { if (S.settings.vibrate && navigator.vibrate) try { navigator.vibrate(p); } catch (e) {} };
 function alarm() { buzz([300, 120, 300, 120, 500]); if (S.settings.sound) beep(); }
 
+/* Aviso con la pantalla bloqueada. Al bloquear, el navegador congela los temporizadores y
+   bloquea navigator.vibrate, así que durante el descanso se reproduce un audio inaudible que
+   mantiene viva la página y, al terminar, se lanza una notificación del sistema (que sí vibra). */
+let restTO = null, keep = null;
+const canNotify = () => 'Notification' in window && 'serviceWorker' in navigator;
+const notifyOn = () => S.settings.notify && canNotify() && Notification.permission === 'granted';
+async function askNotify() {
+  if (!S.settings.notify || !canNotify() || Notification.permission !== 'default') return;
+  try { await Notification.requestPermission(); } catch (e) {}
+  syncRest();
+  if (view === 'settings') render();
+}
+function keepAlive(on) {
+  if (!on) { if (keep) keep.pause(); return; }
+  if (!keep) {
+    // WAV de 1 s con amplitud mínima: no se oye, pero cuenta como audio en reproducción
+    const n = 8000, b = new DataView(new ArrayBuffer(44 + n * 2));
+    const w = (o, s) => [...s].forEach((c, i) => b.setUint8(o + i, c.charCodeAt(0)));
+    w(0, 'RIFF'); b.setUint32(4, 36 + n * 2, true); w(8, 'WAVEfmt '); b.setUint32(16, 16, true); b.setUint16(20, 1, true); b.setUint16(22, 1, true);
+    b.setUint32(24, n, true); b.setUint32(28, n * 2, true); b.setUint16(32, 2, true); b.setUint16(34, 16, true); w(36, 'data'); b.setUint32(40, n * 2, true);
+    for (let i = 0; i < n; i++) b.setInt16(44 + i * 2, i % 2 ? 1 : -1, true);
+    keep = new Audio(URL.createObjectURL(new Blob([b], { type: 'audio/wav' })));
+    keep.loop = true;
+  }
+  if (!keep.paused) return;
+  keep.play().catch(() => {});
+  if ('mediaSession' in navigator && window.MediaMetadata) try { navigator.mediaSession.metadata = new MediaMetadata({ title: 'Descanso en curso', artist: 'GymLog' }); } catch (e) {}
+}
+// Llamar siempre que cambie S.active.timer: programa el fin exacto y activa/desactiva el audio
+function syncRest() {
+  clearTimeout(restTO); restTO = null;
+  const T = S.active && S.active.timer, on = !!(T && !T.fired);
+  if (on) restTO = setTimeout(tick, Math.max(0, T.end - Date.now()) + 50);
+  keepAlive(on && notifyOn());
+}
+async function notifyRest() {
+  if (!notifyOn()) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    await reg.showNotification('Descanso terminado', { body: '¡A por la siguiente serie! 💪', icon: 'icon-192.png', badge: 'icon-192.png',
+      tag: 'gymlog-rest', renotify: true, silent: false, ...(S.settings.vibrate ? { vibrate: [300, 120, 300, 120, 500] } : {}) });
+  } catch (e) {}
+}
+function closeRestNote() {
+  if (!canNotify() || !navigator.serviceWorker.controller) return;
+  navigator.serviceWorker.ready.then(r => r.getNotifications({ tag: 'gymlog-rest' })).then(ns => ns.forEach(n => n.close())).catch(() => {});
+}
+
 function tick() {
   const A = S.active; if (!A) return;
   const el = $('#elapsed'); if (el) el.textContent = fmtElapsed(Date.now() - A.start);
   const T = A.timer; if (!T) return;
   const left = (T.end - Date.now()) / 1000;
-  if (left <= 0 && !T.fired) { T.fired = true; T.firedAt = Date.now(); save(); alarm(); }
+  if (left <= 0 && !T.fired) {
+    T.fired = true; T.firedAt = Date.now(); save(); syncRest();
+    if (document.visibilityState === 'hidden') notifyRest();
+    alarm();
+  }
   else if (T.fired && Date.now() - T.firedAt > 6000) { A.timer = null; save(); }
   updateTimer();
 }
@@ -505,7 +558,7 @@ async function requestWake() {
   try { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } catch (e) { wl = null; }
 }
 function releaseWake() { if (wl) { wl.release().catch(() => {}); wl = null; } }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); tick(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); closeRestNote(); tick(); } });
 
 /* ============ UI: hoja inferior, toast, confirmación ============ */
 let sheetOpen = false, ignorePop = false;
@@ -807,6 +860,11 @@ function renderSettings() {
     <h2>Avisos</h2>
     ${tg('vibrate', 'Vibración')}
     ${tg('sound', 'Sonido al terminar el descanso')}
+    ${tg('notify', 'Notificación con la pantalla bloqueada')}
+    ${st.notify ? `<p class="muted small">${!canNotify() ? '⚠️ Este navegador no admite notificaciones (en iPhone, instala la app en la pantalla de inicio).'
+      : Notification.permission === 'granted' ? '✅ Notificaciones permitidas.'
+      : Notification.permission === 'denied' ? '⚠️ Notificaciones bloqueadas: actívalas en los ajustes del navegador para esta web.'
+      : 'Se pedirá permiso al empezar una sesión.'}</p>` : ''}
     <h2>Rutina</h2>
     <button class="wide day" data-a="go" data-v="editor"><span><b>Editar rutina</b><br><small>${S.routine.length} días · cambia días y ejercicios</small></span><span class="muted">›</span></button>
     <h2>Respaldo</h2>
@@ -975,8 +1033,8 @@ const ACT = {
     else doDel();
   },
   addEx: openAddExercise,
-  tadd: d => { const T = S.active.timer; if (!T) return; if (T.fired) { T.fired = false; T.end = Date.now(); } T.end += +d.v * 1000; T.total = Math.max(T.total, (T.end - Date.now()) / 1000); if (T.end <= Date.now()) S.active.timer = null; save(); updateTimer(); },
-  tskip: () => { S.active.timer = null; save(); updateTimer(); },
+  tadd: d => { const T = S.active.timer; if (!T) return; if (T.fired) { T.fired = false; T.end = Date.now(); } T.end += +d.v * 1000; T.total = Math.max(T.total, (T.end - Date.now()) / 1000); if (T.end <= Date.now()) S.active.timer = null; save(); syncRest(); updateTimer(); },
+  tskip: () => { S.active.timer = null; save(); syncRest(); updateTimer(); },
   finishAsk: () => {
     const A = S.active;
     let sets = 0, vol = 0, prs = 0, pend = 0;
@@ -992,13 +1050,13 @@ const ACT = {
   },
   hist: d => openHistory(d.id),
   metric: d => { progMetric = +d.v; render(); },
-  tog: d => { S.settings[d.k] = !S.settings[d.k]; save(); render(); },
+  tog: d => { S.settings[d.k] = !S.settings[d.k]; save(); syncRest(); render(); if (d.k === 'notify') askNotify(); },
   restAdj: d => { S.settings.restDefault = Math.max(15, Math.min(600, S.settings.restDefault + +d.v)); save(); render(); },
   export: doExport,
   share: doShare,
   import: () => $('#importFile').click(),
   wipe: () => ask('¿Borrar TODO?', 'Se eliminarán historial, rutina y ajustes de este dispositivo. Exporta un respaldo antes si lo necesitas.', 'Borrar todo', () =>
-    ask('¿Seguro del todo?', 'Esta acción no se puede deshacer.', 'Sí, borrar', () => { releaseWake(); S = blank(); save(); view = 'train'; render(); toast('Datos borrados'); }, true), true),
+    ask('¿Seguro del todo?', 'Esta acción no se puede deshacer.', 'Sí, borrar', () => { releaseWake(); S = blank(); syncRest(); save(); view = 'train'; render(); toast('Datos borrados'); }, true), true),
   editDay: d => editDay(+d.d),
   mvDay: d => { move(S.routine, +d.d, +d.v); save(); render(); },
   editEx: d => editEx(+d.d, +d.x),
@@ -1031,7 +1089,7 @@ document.addEventListener('contextmenu', e => { if (e.target.closest('[data-step
 /* ============ arranque ============ */
 render();
 askPersist().then(() => { if (view === 'settings') render(); });
-if (S.active) requestWake();
+if (S.active) { requestWake(); syncRest(); }
 if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 </script>
 </body>
