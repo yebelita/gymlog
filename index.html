@@ -158,6 +158,7 @@ input.big{font-size:32px;font-weight:700;text-align:center;min-height:64px}
 'use strict';
 /* ============ utilidades ============ */
 const KEY = 'gymlog.v1';
+const APP_VERSION = 3; // mantener igual que CACHE en sw.js ('gymlog-v3')
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -458,20 +459,46 @@ function audio() {
   } catch (e) {}
   return ac;
 }
+let comp = null;
+// Dos ráfagas de 3 pitidos (~1,3 s). Onda cuadrada: sus armónicos se oyen mucho más en el
+// altavoz de un móvil que una sinusoide; el compresor permite subir el volumen sin distorsionar.
 function beep() {
   const c = audio(); if (!c) return;
+  if (!comp) { comp = c.createDynamicsCompressor(); comp.threshold.value = -12; comp.ratio.value = 12; comp.connect(c.destination); }
   const t0 = c.currentTime + 0.02;
-  [0, 0.28, 0.56].forEach((d, i) => {
+  [0, 0.2, 0.4, 0.75, 0.95, 1.15].forEach((d, i) => {
     const o = c.createOscillator(), g = c.createGain();
-    o.type = 'sine'; o.frequency.value = i === 2 ? 1320 : 880;
+    o.type = 'square'; o.frequency.value = i < 3 ? 988 : 1319;
     g.gain.setValueAtTime(0.0001, t0 + d);
-    g.gain.exponentialRampToValueAtTime(0.5, t0 + d + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.22);
-    o.connect(g).connect(c.destination); o.start(t0 + d); o.stop(t0 + d + 0.25);
+    g.gain.exponentialRampToValueAtTime(0.8, t0 + d + 0.01);
+    g.gain.setValueAtTime(0.8, t0 + d + 0.12);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + d + 0.15);
+    o.connect(g).connect(comp); o.start(t0 + d); o.stop(t0 + d + 0.16);
   });
 }
 const buzz = p => { if (S.settings.vibrate && navigator.vibrate) try { navigator.vibrate(p); } catch (e) {} };
-function alarm() { buzz([300, 120, 300, 120, 500]); if (S.settings.sound) beep(); }
+function alarm() { buzz([400, 150, 400, 150, 400]); if (S.settings.sound) beep(); }
+
+/* Alarma insistente: se repite cada RING_EVERY hasta que el usuario la atienda (toca la pantalla,
+   desbloquea, Saltar/±15, nueva serie…) o hasta RING_MAX. Con la pantalla bloqueada, además,
+   la notificación se relanza en RENOTIFY_AT, porque es lo único que hace vibrar el móvil. */
+const RING_EVERY = 2000, RING_MAX = 45000, RENOTIFY_AT = [10000, 20000];
+let ringT = null, ringStart = 0, ringNotes = 0;
+const ringing = () => !!ringT;
+function startRing(hidden) {
+  stopRing();
+  ringStart = Date.now(); ringNotes = 0;
+  if (hidden) notifyRest();
+  alarm();
+  ringT = setInterval(() => {
+    const t = Date.now() - ringStart;
+    if (t >= RING_MAX) { silence(); return; }
+    alarm();
+    if (document.visibilityState === 'hidden' && ringNotes < RENOTIFY_AT.length && t >= RENOTIFY_AT[ringNotes]) { ringNotes++; notifyRest(); }
+  }, RING_EVERY);
+}
+function stopRing() { if (ringT) { clearInterval(ringT); ringT = null; } }
+function silence() { if (!ringing()) return; stopRing(); syncRest(); }
 
 /* Aviso con la pantalla bloqueada. Al bloquear, el navegador congela los temporizadores y
    bloquea navigator.vibrate, así que durante el descanso se reproduce un audio inaudible que
@@ -501,19 +528,21 @@ function keepAlive(on) {
   keep.play().catch(() => {});
   if ('mediaSession' in navigator && window.MediaMetadata) try { navigator.mediaSession.metadata = new MediaMetadata({ title: 'Descanso en curso', artist: 'GymLog' }); } catch (e) {}
 }
-// Llamar siempre que cambie S.active.timer: programa el fin exacto y activa/desactiva el audio
+// Llamar siempre que cambie S.active.timer: programa el fin exacto, corta la alarma si el
+// descanso cambió, y mantiene el audio inaudible mientras haya descanso o alarma sonando
 function syncRest() {
   clearTimeout(restTO); restTO = null;
-  const T = S.active && S.active.timer, on = !!(T && !T.fired);
-  if (on) restTO = setTimeout(tick, Math.max(0, T.end - Date.now()) + 50);
-  keepAlive(on && notifyOn());
+  const T = S.active && S.active.timer;
+  if (!T || !T.fired) stopRing();
+  if (T && !T.fired) restTO = setTimeout(tick, Math.max(0, T.end - Date.now()) + 50);
+  keepAlive(!!T && (!T.fired || ringing()) && notifyOn());
 }
 async function notifyRest() {
   if (!notifyOn()) return;
   try {
     const reg = await navigator.serviceWorker.ready;
     await reg.showNotification('Descanso terminado', { body: '¡A por la siguiente serie! 💪', icon: 'icon-192.png', badge: 'icon-192.png',
-      tag: 'gymlog-rest', renotify: true, silent: false, ...(S.settings.vibrate ? { vibrate: [300, 120, 300, 120, 500] } : {}) });
+      tag: 'gymlog-rest', renotify: true, silent: false, ...(S.settings.vibrate ? { vibrate: [500, 200, 500, 200, 500, 200, 800] } : {}) });
   } catch (e) {}
 }
 function closeRestNote() {
@@ -527,11 +556,13 @@ function tick() {
   const T = A.timer; if (!T) return;
   const left = (T.end - Date.now()) / 1000;
   if (left <= 0 && !T.fired) {
-    T.fired = true; T.firedAt = Date.now(); save(); syncRest();
-    if (document.visibilityState === 'hidden') notifyRest();
-    alarm();
+    T.fired = true; T.firedAt = Date.now(); save();
+    // Si la página estuvo congelada y se entera tarde al desbloquear, el usuario ya está mirando: no suena
+    const hidden = document.visibilityState === 'hidden';
+    if (hidden || -left < 5) startRing(hidden);
+    syncRest();
   }
-  else if (T.fired && Date.now() - T.firedAt > 6000) { A.timer = null; save(); }
+  else if (T.fired && !ringing() && Date.now() - T.firedAt > 6000) { A.timer = null; save(); }
   updateTimer();
 }
 setInterval(tick, 250);
@@ -558,7 +589,9 @@ async function requestWake() {
   try { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } catch (e) { wl = null; }
 }
 function releaseWake() { if (wl) { wl.release().catch(() => {}); wl = null; } }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); closeRestNote(); tick(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); silence(); closeRestNote(); tick(); } });
+// Cualquier toque en la pantalla silencia la alarma (fase de captura: antes que cualquier otra acción)
+document.addEventListener('pointerdown', silence, true);
 
 /* ============ UI: hoja inferior, toast, confirmación ============ */
 let sheetOpen = false, ignorePop = false;
@@ -865,6 +898,8 @@ function renderSettings() {
       : Notification.permission === 'granted' ? '✅ Notificaciones permitidas.'
       : Notification.permission === 'denied' ? '⚠️ Notificaciones bloqueadas: actívalas en los ajustes del navegador para esta web.'
       : 'Se pedirá permiso al empezar una sesión.'}</p>` : ''}
+    <button class="wide mt" data-a="testAlarm">🔔 Probar alarma</button>
+    <p class="muted small">La alarma se repite hasta que toques la pantalla o desbloquees el móvil (máx. ${RING_MAX / 1000} s). Suena con el volumen <b>multimedia</b>: si no la oyes, súbelo.</p>
     <h2>Rutina</h2>
     <button class="wide day" data-a="go" data-v="editor"><span><b>Editar rutina</b><br><small>${S.routine.length} días · cambia días y ejercicios</small></span><span class="muted">›</span></button>
     <h2>Respaldo</h2>
@@ -874,7 +909,7 @@ function renderSettings() {
       <div class="muted small mt">Almacenamiento persistente: ${persisted === null ? 'no disponible' : persisted ? '✅ concedido' : '⚠️ no concedido (instala la app para obtenerlo)'}</div></div>
     <h2>Zona peligrosa</h2>
     <button class="wide btn-dan" data-a="wipe">Borrar todos los datos</button>
-    <p class="muted small mt" style="text-align:center">GymLog · todo se guarda solo en este dispositivo</p></main>`;
+    <p class="muted small mt" style="text-align:center">GymLog v${APP_VERSION} · todo se guarda solo en este dispositivo</p></main>`;
 }
 function backupBlob() {
   const data = JSON.stringify({ app: 'gymlog', exportedAt: new Date().toISOString(), ...S }, null, 1);
@@ -1051,6 +1086,7 @@ const ACT = {
   hist: d => openHistory(d.id),
   metric: d => { progMetric = +d.v; render(); },
   tog: d => { S.settings[d.k] = !S.settings[d.k]; save(); syncRest(); render(); if (d.k === 'notify') askNotify(); },
+  testAlarm: () => { audio(); alarm(); },
   restAdj: d => { S.settings.restDefault = Math.max(15, Math.min(600, S.settings.restDefault + +d.v)); save(); render(); },
   export: doExport,
   share: doShare,
