@@ -1,0 +1,12 @@
+{
+  "_nota": "Correcciones al dataset. 'rules' se aplican por nombre (la primera que coincide gana; 'whenTarget' limita a entradas cuyo músculo principal normalizado esté en la lista). 'ids' se aplican después y tienen la última palabra. p/s reemplazan; alias añade términos de búsqueda; mode fija el tipo sugerido (reps o tiempo); drop excluye la entrada.",
+  "rules": [
+    { "name": "hack squat", "p": ["quadriceps"], "s": ["gluteal", "hamstring", "calves"], "alias": ["hack"], "motivo": "El dataset da glúteos como principal en todos los hack squat (0046, 0741, 0743, 0755)." },
+    { "name": "leg press", "whenTarget": ["gluteal", "quadriceps", "calves"], "p": ["quadriceps"], "s": ["gluteal", "hamstring"], "alias": ["prensa"], "motivo": "La prensa de piernas es de cuádriceps; el dataset la reparte entre glúteos (6), pantorrillas (3) y cuádriceps (1)." },
+    { "name": "squat", "whenTarget": ["gluteal", "quadriceps"], "p": ["quadriceps", "gluteal"], "motivo": "En las sentadillas el dataset pone glúteos como principal en 45 casos y cuádriceps en 27; ambos son principales." }
+  ],
+  "ids": {
+    "0743": { "alias": ["maquina hack"] },
+    "0664": { "mode": "reps" }
+  }
+}

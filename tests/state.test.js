@@ -10,7 +10,7 @@ test('sin datos previos arranca con la rutina por defecto de 6 días', async () 
   assert.equal(S.routine.length, 6);
   assert.deepEqual(S.routine.map(d => d.name), ['Glúteos (fuerza)', 'Espalda (densidad)', 'Pierna (cuádriceps)',
     'Recuperación activa', 'Glúteos (hipertrofia)', 'Tren superior (espalda y hombros)']);
-  assert.deepEqual({ ...S.settings }, { timerOn: true, useExRest: true, restDefault: 90, vibrate: true, sound: true, notify: true });
+  assert.deepEqual({ ...S.settings }, { timerOn: true, useExRest: true, restDefault: 90, vibrate: true, sound: true, notify: true, bodyGender: 'male' });
   assert.equal(S.sessions.length, 0);
   assert.equal(S.active, null);
   app.close();

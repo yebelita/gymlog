@@ -1,0 +1,6 @@
+[
+  { "id": "x01", "n": "barbell hip thrust", "es": "hip thrust con barra", "alias": ["hip thrust", "empuje de cadera", "puente de gluteo con barra"], "p": ["gluteal"], "s": ["hamstring", "adductors"] },
+  { "id": "x02", "n": "cable donkey kickback", "es": "patada de glúteo en polea", "alias": ["patada de gluteo", "patada en polea", "kickback gluteo", "glute kickback", "donkey kickback"], "p": ["gluteal"], "s": ["hamstring"] },
+  { "id": "x03", "n": "cable face pull", "es": "face pull en polea", "alias": ["face pull", "jalon a la cara"], "p": ["deltoids", "trapezius"], "s": ["upper-back"] },
+  { "id": "x04", "n": "bulgarian split squat", "es": "sentadilla búlgara", "alias": ["bulgaras", "bulgarian", "sentadilla bulgara"], "p": ["quadriceps", "gluteal"], "s": ["hamstring", "adductors"] }
+]

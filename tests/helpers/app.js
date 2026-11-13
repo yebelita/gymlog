@@ -7,7 +7,10 @@ const path = require('node:path');
 const { JSDOM, VirtualConsole } = require('jsdom');
 
 const ROOT = path.join(__dirname, '..', '..');
-const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
+// jsdom recibe el HTML como texto (URL http://localhost/), así que no puede cargar <script src> locales:
+// se sustituyen por su contenido en línea, que para la página es equivalente.
+const HTML = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8')
+  .replace(/<script src="([^":]+)"><\/script>/g, (_, src) => `<script>${fs.readFileSync(path.join(ROOT, src), 'utf8')}</script>`);
 const KEY = 'gymlog.v1';
 const T0 = new Date(2026, 9, 20, 10, 0, 0).getTime(); // martes 20 oct 2026, 10:00 hora local
 

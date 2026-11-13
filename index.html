@@ -100,12 +100,58 @@ h2{font-size:15px;margin:22px 0 10px;color:var(--mu);font-weight:600;text-transf
 .sheet h3{margin:2px 0 14px;font-size:21px}
 .field{display:block;margin-bottom:12px}
 .field>span{display:block;font-size:14px;color:var(--mu);margin-bottom:4px}
-input[type=text],input[type=number],select{width:100%;min-height:52px;background:var(--s2);color:var(--tx);border:1px solid #3a4050;border-radius:12px;padding:0 14px;font:inherit;font-size:18px}
+input[type=text],input[type=number],input[type=date],select{width:100%;min-height:52px;background:var(--s2);color:var(--tx);border:1px solid #3a4050;border-radius:12px;padding:0 14px;font:inherit;font-size:18px}
 input.big{font-size:32px;font-weight:700;text-align:center;min-height:64px}
 .list-btn{display:flex;width:100%;text-align:left;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;min-height:54px}
 .seg{display:flex;background:var(--s2);border-radius:14px;padding:4px;gap:4px}
 .seg button{flex:1;background:none;min-height:46px;color:var(--mu);padding:0 6px;font-size:15px}
 .seg button.on{background:var(--s3s);color:var(--tx);font-weight:700}
+#progTabs{margin-bottom:12px}
+.mhd{display:flex;justify-content:space-between;align-items:center}
+.mgroup{margin:16px 0 6px;font-size:13px;color:var(--mu);text-transform:uppercase;letter-spacing:.05em}
+.mfh{display:flex;justify-content:space-between;align-items:center}
+.mfh label{font-size:15px;color:var(--mu)} .mfh small{font-size:13px}
+.info{min-width:44px;min-height:44px;padding:0;background:none;color:var(--ac);font-size:20px}
+.mf{margin-bottom:10px}
+.mfi{display:flex;gap:6px}
+.mfi input{text-align:center;font-weight:700;flex:1;min-width:0}
+.mfi button{width:52px;min-height:52px;padding:0;font-size:26px;background:var(--s3s);border-radius:12px;flex:none}
+.guide{background:var(--s2);border-radius:14px;padding:10px;margin-top:6px}
+.guide[hidden]{display:none}
+.guide img{display:block;width:100%;max-width:300px;aspect-ratio:1;margin:0 auto 8px;border-radius:10px;background:var(--bg)}
+.guide p{margin:0;font-size:15px;line-height:1.4}
+.mrow{background:var(--s1);border-radius:14px;padding:10px 12px;margin-bottom:8px;cursor:pointer}
+.mh{display:flex;justify-content:space-between;margin-bottom:4px}
+.mv{display:flex;justify-content:space-between;gap:8px;padding:3px 0;font-variant-numeric:tabular-nums}
+.mv>span:first-child{color:var(--mu)}
+.dl{font-style:normal;font-size:13px;color:var(--mu)}
+.mn{margin-top:4px}
+:root{--h0:#2a2f3b;--h1:#1d4d44;--h2:#1f8068;--h3:#34c08c;--h4:#a7f3d0}
+.bodies{display:flex;gap:6px;margin:12px 0 6px}
+.bodies svg{flex:1;min-width:0;height:auto;max-height:520px}
+.bm-in{fill:#232733}
+.bm path{stroke:var(--bg);stroke-width:2}
+.bm{cursor:pointer;outline:none}
+.bm.l0 path{fill:var(--h0)} .bm.l1 path{fill:var(--h1)} .bm.l2 path{fill:var(--h2)} .bm.l3 path{fill:var(--h3)} .bm.l4 path{fill:var(--h4)}
+.bm.sel path{stroke:#fff;stroke-width:4}
+.bm:focus-visible path{stroke:var(--ac);stroke-width:5}
+.legend{display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;color:var(--mu);margin-bottom:8px}
+.sw{width:24px;height:12px;border-radius:4px;display:inline-block}
+.sw.l0{background:var(--h0)} .sw.l1{background:var(--h1)} .sw.l2{background:var(--h2)} .sw.l3{background:var(--h3)} .sw.l4{background:var(--h4)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chips .chip{cursor:pointer;padding:6px 10px}
+.mdet{margin:8px 0}
+.mdet .mv{cursor:pointer}
+.mchips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}
+.mc{min-height:44px;padding:0 12px;font-size:15px;background:var(--s2);color:var(--tx);border-radius:12px}
+.mc.st1{background:var(--ok);color:#04130d;font-weight:700}
+.mc.st2{background:var(--ac);color:#06121f;font-weight:700}
+#fm summary{cursor:pointer;padding:10px 0}
+.lic{white-space:pre-wrap;font-size:12px;color:var(--mu);margin:8px 0 0}
+.csearch{margin:8px 0}
+.cres{max-height:240px;overflow:auto;margin:6px 0}
+.cres div{cursor:pointer}
+.cres div span:first-child{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tg{display:flex;width:100%;justify-content:space-between;align-items:center;margin-bottom:8px;min-height:56px;background:var(--s1);text-align:left}
 .tg i{font-style:normal;font-size:14px;font-weight:700;border-radius:99px;padding:5px 12px;background:var(--s2);color:var(--mu)}
 .tg i.on{background:var(--okd);color:var(--ok)}
@@ -154,11 +200,13 @@ input.big{font-size:32px;font-weight:700;text-align:center;min-height:64px}
 <div id="sheetRoot"></div>
 <div id="toast"></div>
 <input type="file" id="importFile" accept=".json,application/json" hidden>
+<script src="src/body-paths.js"></script>
+<script src="src/exercise-catalog.js"></script>
 <script>
 'use strict';
 /* ============ utilidades ============ */
 const KEY = 'gymlog.v1';
-const APP_VERSION = 3; // mantener igual que CACHE en sw.js ('gymlog-v3')
+const APP_VERSION = 8; // mantener igual que CACHE en sw.js ('gymlog-v8')
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -227,9 +275,162 @@ function defaultRoutine() {
   ];
 }
 
+/* ============ medidas corporales (datos) ============ */
+// Cada medida: clave, etiqueta, unidad, grupo del formulario, valor típico (para los botones −/+ sin historial) y guía "cómo medir".
+// Izquierdo/derecho comparten guía (misma imagen y texto).
+const GUIDE = {
+  peso: { guia: 'Por la mañana, tras ir al baño y antes de comer, con la misma báscula y poca ropa.' },
+  cuello: { img: 'cuello', guia: 'Cinta justo por debajo de la nuez, horizontal. Cabeza recta, mirada al frente, sin tensar el cuello.' },
+  hombros: { img: 'hombros', guia: 'Rodea la parte más ancha de los hombros (deltoides), pasando por el pecho y la espalda. Brazos relajados a los lados.' },
+  pecho: { img: 'pecho', guia: 'A la altura de los pezones, por debajo de las axilas y por la espalda en horizontal. Respira normal y mide al soltar el aire.' },
+  cintura: { img: 'cintura', guia: 'A la altura del ombligo (o en el punto más estrecho: elige uno y mantenlo siempre). Relajado, sin meter barriga, al soltar el aire.' },
+  cadera: { img: 'cadera', guia: 'Alrededor de la parte más ancha de la cadera, con los pies juntos y la cinta paralela al suelo.' },
+  biceps: { img: 'biceps', guia: 'A mitad entre el hombro y el codo, con el brazo relajado a un lado. Mide siempre con el brazo relajado, o siempre flexionado. Repite en ambos lados con la misma postura.' },
+  antebrazo: { img: 'antebrazo', guia: 'En la parte más gruesa, cerca del codo, con el brazo relajado y la palma hacia el muslo. Repite en ambos lados con la misma postura.' },
+  muslo: { img: 'muslo', guia: 'A mitad entre la cadera y la rodilla, de pie y con el peso repartido entre ambas piernas. Repite en ambas piernas.' },
+  pantorrilla: { img: 'pantorrilla', guia: 'En la parte más gruesa del gemelo, de pie y con el peso repartido. Repite en ambas piernas.' }
+};
+const MEASURES = [
+  ['peso', 'Peso corporal', 'kg', 'Peso', 70, 'peso'],
+  ['cuello', 'Cuello', 'cm', 'Tronco', 38, 'cuello'], ['hombros', 'Hombros', 'cm', 'Tronco', 115, 'hombros'],
+  ['pecho', 'Pecho', 'cm', 'Tronco', 100, 'pecho'], ['cintura', 'Cintura', 'cm', 'Tronco', 80, 'cintura'], ['cadera', 'Cadera', 'cm', 'Tronco', 95, 'cadera'],
+  ['bicepsI', 'Bíceps izquierdo', 'cm', 'Brazos', 33, 'biceps'], ['bicepsD', 'Bíceps derecho', 'cm', 'Brazos', 33, 'biceps'],
+  ['antebrazoI', 'Antebrazo izquierdo', 'cm', 'Brazos', 28, 'antebrazo'], ['antebrazoD', 'Antebrazo derecho', 'cm', 'Brazos', 28, 'antebrazo'],
+  ['musloI', 'Muslo izquierdo', 'cm', 'Piernas', 55, 'muslo'], ['musloD', 'Muslo derecho', 'cm', 'Piernas', 55, 'muslo'],
+  ['pantorrillaI', 'Pantorrilla izquierda', 'cm', 'Piernas', 37, 'pantorrilla'], ['pantorrillaD', 'Pantorrilla derecha', 'cm', 'Piernas', 37, 'pantorrilla']
+].map(([k, label, unit, group, def, g]) => ({ k, label, unit, group, def, guia: GUIDE[g].guia, img: GUIDE[g].img ? `assets/medidas/${GUIDE[g].img}.webp` : null }));
+const MEAS_BY_KEY = Object.fromEntries(MEASURES.map(m => [m.k, m]));
+const MEAS_RANGE = { kg: [20, 500], cm: [5, 300] };
+const MEAS_TIPS = 'Mide siempre a la misma hora del día (mejor por la mañana) y sin ropa gruesa. Cinta paralela al suelo, ajustada pero sin apretar la piel. Mide dos veces y quédate con la media. Lo importante es la tendencia: usa siempre la misma postura y el mismo punto.';
+// Descarta mediciones malformadas (sin fecha numérica o sin ningún valor numérico) y ordena por fecha
+function cleanMeasures(list) {
+  if (!Array.isArray(list)) return [];
+  const out = [];
+  for (const x of list) {
+    if (!x || typeof x !== 'object' || !Number.isFinite(x.date) || !x.values || typeof x.values !== 'object' || Array.isArray(x.values)) continue;
+    const values = {};
+    for (const m of MEASURES) { const v = x.values[m.k]; if (typeof v === 'number' && Number.isFinite(v)) values[m.k] = v; }
+    if (!Object.keys(values).length) continue;
+    out.push({ id: typeof x.id === 'string' && x.id ? x.id : uid(), date: x.date, values, note: typeof x.note === 'string' ? x.note : '' });
+  }
+  return out.sort((a, b) => a.date - b.date);
+}
+
+/* ============ músculos (datos) ============ */
+// Los 18 músculos que sabe dibujar el cuerpo SVG (src/body-paths.js), de la cabeza a los pies. El resto de partes del
+// dibujo (cabeza, manos, pies…) son silueta y nunca se colorean.
+const MUSCLES = ['trapezius', 'deltoids', 'chest', 'upper-back', 'serratus', 'biceps', 'triceps', 'forearm', 'abs', 'obliques', 'lower-back',
+  'gluteal', 'quadriceps', 'hamstring', 'adductors', 'hip-flexors', 'calves', 'tibialis'];
+const MUSCLE_ES = { trapezius: 'Trapecio', deltoids: 'Hombros', chest: 'Pecho', 'upper-back': 'Dorsales y espalda alta', serratus: 'Serrato',
+  biceps: 'Bíceps', triceps: 'Tríceps', forearm: 'Antebrazos', abs: 'Abdomen', obliques: 'Oblicuos', 'lower-back': 'Lumbar', gluteal: 'Glúteos',
+  quadriceps: 'Cuádriceps', hamstring: 'Isquios', adductors: 'Aductores', 'hip-flexors': 'Flexores de cadera', calves: 'Gemelos', tibialis: 'Tibiales' };
+const SECONDARY_W = 0.4; // una serie cuenta 1 para el músculo principal y 0,4 para los secundarios
+const fold = s => norm(s).normalize('NFD').replace(/[̀-ͯ]/g, '');
+// Mapeo curado de los ejercicios de la rutina por defecto (p = principales, s = secundarios). [] = sin músculos a propósito.
+const CURATED = {};
+const CUR = (names, p, s = []) => names.forEach(n => { CURATED[norm(n)] = { p, s }; });
+CUR(['Hip thrust con barra', 'Hip thrust (pausa de 1 s arriba)'], ['gluteal'], ['hamstring', 'adductors']);
+CUR(['Peso muerto rumano con barra', 'Peso muerto rumano unilateral'], ['hamstring', 'gluteal'], ['lower-back']);
+CUR(['Búlgaras'], ['quadriceps', 'gluteal'], ['hamstring', 'adductors']);
+CUR(['Step-up'], ['quadriceps', 'gluteal'], ['hamstring']);
+CUR(['Abducción en máquina', 'Patada en polea'], ['gluteal']);
+CUR(['Remo con barra inclinado'], ['upper-back'], ['trapezius', 'biceps', 'lower-back', 'deltoids']);
+CUR(['Jalón al pecho, agarre neutro', 'Jalón al pecho o dominadas asistidas'], ['upper-back'], ['biceps', 'forearm']);
+CUR(['Remo en polea', 'Remo en cable'], ['upper-back'], ['biceps', 'trapezius']);
+CUR(['Remo pecho apoyado o con mancuerna'], ['upper-back'], ['trapezius', 'biceps', 'deltoids']);
+CUR(['Pullover en polea'], ['upper-back'], ['triceps']);
+CUR(['Face pull'], ['deltoids', 'trapezius'], ['upper-back']);
+CUR(['Reverse fly en máquina'], ['deltoids'], ['trapezius', 'upper-back']);
+CUR(['Curl martillo', 'Curl de bíceps'], ['biceps'], ['forearm']);
+CUR(['Hack'], ['quadriceps'], ['gluteal']);
+CUR(['Prensa'], ['quadriceps'], ['gluteal', 'hamstring']);
+CUR(['Extensión de cuádriceps'], ['quadriceps']);
+CUR(['Curl femoral'], ['hamstring'], ['calves']);
+CUR(['Aductor'], ['adductors']);
+CUR(['Plancha'], ['abs'], ['obliques', 'lower-back']);
+CUR(['Pallof Press'], ['obliques', 'abs']);
+CUR(['Dead Bug'], ['abs'], ['hip-flexors']);
+CUR(['Press militar'], ['deltoids'], ['triceps', 'trapezius']);
+CUR(['Press banca con mancuernas'], ['chest'], ['triceps', 'deltoids']);
+CUR(['Elevaciones laterales'], ['deltoids']);
+CUR(['Extensión de tríceps'], ['triceps']);
+CUR(['Caminata inclinada', 'Movilidad'], []);
+// Palabras clave (sobre el nombre sin acentos ni mayúsculas): la primera regla que coincide gana, de más a menos específica
+const MUSCLE_RULES = [
+  [/extension de cuadriceps|leg extension/, ['quadriceps']],
+  [/curl femoral|isquio|leg curl/, ['hamstring']],
+  [/peso muerto|deadlift/, ['hamstring', 'gluteal'], ['lower-back']],
+  [/hip thrust|puente de gluteo|patada|glute/, ['gluteal'], ['hamstring']],
+  [/abduccion|abductor/, ['gluteal']],
+  [/aductor/, ['adductors']],
+  [/sentadilla|squat|zancada|prensa|hack|step/, ['quadriceps', 'gluteal'], ['hamstring']],
+  [/press (de )?banca|press inclinado|aperturas|fondos|pecho/, ['chest'], ['triceps', 'deltoids']],
+  [/press militar|elevaciones laterales|pajaros|face pull|hombro/, ['deltoids']],
+  [/remo|jalon|dominadas|pullover/, ['upper-back'], ['biceps']],
+  [/curl|biceps/, ['biceps'], ['forearm']],
+  [/triceps|frances/, ['triceps']],
+  [/gemelo|pantorrilla|talones/, ['calves']],
+  [/plancha|abdominal|crunch|core/, ['abs']],
+  [/oblicuo|pallof/, ['obliques']],
+  [/encogimientos|trapecio/, ['trapezius']],
+  [/lumbar|hiperextension/, ['lower-back']],
+  [/antebrazo|muneca/, ['forearm']]
+];
+// Lo que el usuario decide, por nombre normalizado: { p: [...], s: [...] }. { p: [], s: [] } = "sin músculos" a propósito.
+function cleanExMuscles(o) {
+  const out = {};
+  if (!o || typeof o !== 'object' || Array.isArray(o)) return out;
+  const list = a => (Array.isArray(a) ? [...new Set(a.filter(m => MUSCLES.includes(m)))] : []);
+  for (const [k, e] of Object.entries(o)) {
+    if (!e || typeof e !== 'object' || Array.isArray(e)) continue;
+    const p = list(e.p);
+    out[norm(k)] = { p, s: list(e.s).filter(m => !p.includes(m)) };
+  }
+  return out;
+}
+// Músculos de un ejercicio: usuario > curado > palabras clave > sin clasificar (src: null)
+function musclesFor(name) {
+  const k = norm(name);
+  let src = 'user', e = S.exMuscles[k];
+  if (!e) { src = 'builtin'; e = CURATED[k]; }
+  if (!e) { src = 'keyword'; const f = fold(name), r = MUSCLE_RULES.find(x => x[0].test(f)); e = r ? { p: r[1], s: r[2] || [] } : null; }
+  if (!e) return { src: null, p: [], s: [], w: {} };
+  const w = {};
+  e.s.forEach(m => { w[m] = SECONDARY_W; });
+  e.p.forEach(m => { w[m] = 1; });
+  return { src, p: e.p, s: e.s, w };
+}
+// Series efectivas por músculo en los últimos `days` días (hoy incluido), con nivel 0-4 relativo al máximo.
+function muscleLoad(days) {
+  const d0 = new Date(); d0.setHours(0, 0, 0, 0);
+  const from = d0.getTime() - (days - 1) * 864e5;
+  const load = Object.fromEntries(MUSCLES.map(m => [m, 0])), by = {}, unc = {};
+  for (const ss of S.sessions) {
+    if (ss.start < from) continue;
+    for (const ex of ss.exercises) {
+      const n = (ex.sets || []).length, key = norm(ex.name);
+      if (!n) continue;
+      const r = musclesFor(ex.name);
+      if (!r.src) { (unc[key] = unc[key] || { name: ex.name, sets: 0 }).sets += n; continue; }
+      for (const [m, w] of Object.entries(r.w)) {
+        load[m] += n * w;
+        const l = (by[m] = by[m] || {});
+        (l[key] = l[key] || { name: ex.name, v: 0 }).v += n * w;
+      }
+    }
+  }
+  MUSCLES.forEach(m => { load[m] = r2(load[m]); });
+  const max = Math.max(0, ...MUSCLES.map(m => load[m])), levels = {}, contrib = {};
+  MUSCLES.forEach(m => {
+    levels[m] = load[m] > 0 ? Math.max(1, Math.min(4, Math.ceil(load[m] / max * 4))) : 0;
+    contrib[m] = Object.values(by[m] || {}).map(x => ({ name: x.name, v: r2(x.v) })).sort((a, b) => b.v - a.v);
+  });
+  return { load, levels, contrib, unclassified: Object.values(unc).sort((a, b) => b.sets - a.sets) };
+}
+
 /* ============ estado y almacenamiento ============ */
-const DEF_SETTINGS = { timerOn: true, useExRest: true, restDefault: 90, vibrate: true, sound: true, notify: true };
-function blank() { return { v: 1, routine: defaultRoutine(), sessions: [], settings: { ...DEF_SETTINGS }, active: null, lastExport: 0 }; }
+const DEF_SETTINGS = { timerOn: true, useExRest: true, restDefault: 90, vibrate: true, sound: true, notify: true, bodyGender: 'male' };
+function blank() { return { v: 1, routine: defaultRoutine(), sessions: [], settings: { ...DEF_SETTINGS }, active: null, lastExport: 0, measures: [], exMuscles: {} }; }
 function migrate(d) {
   d.v = 1;
   d.settings = { ...DEF_SETTINGS, ...(d.settings || {}) };
@@ -238,6 +439,9 @@ function migrate(d) {
   d.sessions.sort((a, b) => a.start - b.start);
   d.active = d.active || null;
   d.lastExport = d.lastExport || 0;
+  d.measures = cleanMeasures(d.measures);
+  d.exMuscles = cleanExMuscles(d.exMuscles);
+  if (d.settings.bodyGender !== 'female') d.settings.bodyGender = 'male';
   return d;
 }
 function load() {
@@ -629,7 +833,7 @@ function ask(title, msg, okLabel, onOk, danger) {
 
 /* ============ vistas ============ */
 let view = 'train';
-let progEx = null, progMetric = 0;
+let progEx = null, progMetric = 0, progTab = 'ejercicios';
 function render() {
   const app = $('#app');
   document.querySelectorAll('#nav button').forEach(b => b.classList.toggle('on', b.dataset.v === (view === 'editor' ? 'settings' : view)));
@@ -832,11 +1036,24 @@ const METRICS = {
   reps: [['Reps máx', 'maxR', v => v + ' reps'], ['Reps totales', 'totR', v => v + ' reps']],
   tiempo: [['Tiempo máx', 'maxT', fmtT], ['Tiempo total', 'totT', fmtT]]
 };
+/* Pestañas de Progreso: cada una pinta solo su contenido; la barra se oculta mientras haya una sola */
+const PROG_TABS = [
+  { id: 'ejercicios', label: 'Ejercicios', render: renderProgEjercicios },
+  { id: 'musculos', label: 'Músculos', render: renderProgMusculos },
+  { id: 'medidas', label: 'Medidas', render: renderProgMedidas }
+];
 function renderProgress() {
-  let h = '<main><h1>Progreso</h1>';
+  let tab = PROG_TABS.find(t => t.id === progTab);
+  if (!tab) { tab = PROG_TABS[0]; progTab = tab.id; }
+  const bar = PROG_TABS.length < 2 ? '' : `<div class="seg" id="progTabs">${PROG_TABS.map(t =>
+    `<button data-a="progTab" data-v="${t.id}" class="${t.id === tab.id ? 'on' : ''}">${t.label}</button>`).join('')}</div>`;
+  return `<main><h1>Progreso</h1>${bar}${tab.render()}</main>`;
+}
+function renderProgEjercicios() {
+  let h = '';
   const used = [];
   for (let i = S.sessions.length - 1; i >= 0; i--) S.sessions[i].exercises.forEach(e => { if (!used.some(u => norm(u) === norm(e.name))) used.push(e.name); });
-  if (!used.length) return h + '<div class="empty">Cuando guardes sesiones verás aquí tu progreso por ejercicio.</div></main>';
+  if (!used.length) return h + '<div class="empty">Cuando guardes sesiones verás aquí tu progreso por ejercicio.</div>';
   if (!progEx || !used.some(u => norm(u) === norm(progEx))) progEx = used[0];
   h += `<select data-ch="progEx">${used.map(u => `<option ${norm(u) === norm(progEx) ? 'selected' : ''}>${esc(u)}</option>`).join('')}</select>`;
   const hist = exHistory(progEx);
@@ -857,7 +1074,222 @@ function renderProgress() {
     const x = hist[i];
     h += `<div><span>${fmtShort(x.date)} <span class="muted small">${new Date(x.date).getFullYear()}</span></span><span>${x.sets.map(s => setShort(mode, s)).join(' · ')}</span></div>`;
   }
-  return h + '</div></main>';
+  return h + '</div>';
+}
+/* ---- Progreso → Músculos ---- */
+let musWin = 7, musSel = null;
+const fmtS = v => { v = Math.round(v * 10) / 10; return fmtN(v) + (v === 1 ? ' serie' : ' series'); };
+function bodySVG(g, v, R) {
+  const view = BODY_PATHS[g][v];
+  let h = `<svg viewBox="${view.vb}" role="group" aria-label="${v === 'front' ? 'Vista frontal' : 'Vista posterior'}">`;
+  for (const [k, ds] of Object.entries(view.p)) if (!MUSCLES.includes(k)) ds.forEach(d => { h += `<path class="bm-in" d="${d}"/>`; });
+  for (const m of MUSCLES) {
+    if (!view.p[m]) continue;
+    h += `<g class="bm l${R.levels[m]}${musSel === m ? ' sel' : ''}" data-a="muscle" data-m="${m}" role="button" tabindex="0" aria-label="${MUSCLE_ES[m]}, ${fmtS(R.load[m])}">${view.p[m].map(d => `<path d="${d}"/>`).join('')}</g>`;
+  }
+  return h + '</svg>';
+}
+function renderProgMusculos() {
+  const g = S.settings.bodyGender === 'female' ? 'female' : 'male', R = muscleLoad(musWin);
+  const seg = (act, cur, opts) => `<div class="seg mt">${opts.map(([v, l]) => `<button data-a="${act}" data-v="${v}" class="${String(cur) === String(v) ? 'on' : ''}">${l}</button>`).join('')}</div>`;
+  let h = seg('bodyGender', g, [['male', 'Hombre'], ['female', 'Mujer']]) + seg('musWin', musWin, [[7, '7 días'], [30, '30 días']]);
+  h += `<div class="bodies">${bodySVG(g, 'front', R)}${bodySVG(g, 'back', R)}</div>
+    <div class="legend"><span>Menos</span>${[0, 1, 2, 3, 4].map(i => `<i class="sw l${i}"></i>`).join('')}<span>Más</span></div>`;
+  const worked = MUSCLES.filter(m => R.load[m] > 0).sort((a, b) => R.load[b] - R.load[a] || MUSCLES.indexOf(a) - MUSCLES.indexOf(b));
+  const missed = MUSCLES.filter(m => !(R.load[m] > 0));
+  if (!worked.length) h += '<div class="empty">Sin entrenamientos con músculos asignados en este periodo.</div>';
+  if (musSel) {
+    h += `<div class="card mdet" id="musDet"><div class="mh"><b>${MUSCLE_ES[musSel]}</b><span>${fmtS(R.load[musSel])}</span></div>`;
+    h += R.contrib[musSel].length ? R.contrib[musSel].map(x => `<div class="mv" data-a="muscleEdit" data-n="${esc(x.name)}"><span>${esc(x.name)}</span><span>${fmtS(x.v)} ✎</span></div>`).join('')
+      : '<p class="muted small">Sin series de este músculo en el periodo.</p>';
+    h += '</div>';
+  }
+  if (worked.length) h += `<h2>Más trabajados</h2><div class="plist" id="musRank">${worked.map(m => `<div data-a="muscle" data-m="${m}"><span>${MUSCLE_ES[m]}</span><span>${fmtS(R.load[m])}</span></div>`).join('')}</div>`;
+  if (missed.length) h += `<h2>Sin trabajar</h2><div class="chips" id="musMiss">${missed.map(m => `<span class="chip" data-a="muscle" data-m="${m}">${MUSCLE_ES[m]}</span>`).join('')}</div>`;
+  if (R.unclassified.length) {
+    h += `<h2>Sin clasificar (${R.unclassified.length})</h2><p class="muted small">No sé qué músculos trabajan estos ejercicios, así que no cuentan en el mapa. Toca uno para asignarlos.</p>
+      <div class="plist" id="musUnc">${R.unclassified.map(u => `<div data-a="muscleEdit" data-n="${esc(u.name)}"><span>${esc(u.name)}</span><span>${fmtS(u.sets)} ✎</span></div>`).join('')}</div>`;
+  }
+  return h;
+}
+/* ---- catálogo de ejercicios (búsqueda) ---- */
+const CAT = typeof EX_CATALOG !== 'undefined' ? EX_CATALOG : []; // [id, nombre (inglés), principales, secundarios, nombre en español?, alias?]
+const CAT_STOP = ['de', 'del', 'la', 'el', 'los', 'las', 'con', 'en', 'al', 'a', 'para', 'y', 'o'];
+// Frases en español → su equivalente en el catálogo (que está en inglés), antes de separar en palabras
+const CAT_PHRASES = [['peso muerto', 'deadlift'], ['press de banca', 'bench press'], ['press banca', 'bench press'], ['jalon al pecho', 'lat pulldown'],
+  ['extension de cuadriceps', 'leg extension'], ['curl femoral', 'leg curl'], ['elevacion de talones', 'calf raise'], ['elevaciones laterales', 'lateral raise'],
+  ['press militar', 'military press'], ['remo con barra', 'barbell row'], ['pesa rusa', 'kettlebell'], ['peso corporal', 'body weight'], ['patada de gluteo', 'glute kickback']];
+// Palabra en español (singular, sin acentos) → palabras equivalentes del catálogo
+const CAT_SYN = { sentadilla: ['squat'], zancada: ['lunge'], prensa: ['leg press'], remo: ['row'], jalon: ['pulldown'], dominada: ['pull-up', 'chin-up'], banca: ['bench'],
+  hombro: ['shoulder', 'delt'], pecho: ['chest'], espalda: ['back'], gluteo: ['glute'], pierna: ['leg'], abdominal: ['crunch', 'sit-up', 'abs'], plancha: ['plank'],
+  mancuerna: ['dumbbell'], barra: ['barbell'], polea: ['cable'], maquina: ['machine', 'lever', 'sled'], gemelo: ['calf'], pantorrilla: ['calf'], talon: ['calf'],
+  cuadricep: ['quadriceps', 'leg extension'], femoral: ['leg curl', 'hamstring'], isquio: ['leg curl', 'hamstring'], aductor: ['adduct'], abductor: ['abduct'],
+  abduccion: ['abduct'], apertura: ['fly'], fondo: ['dip'], encogimiento: ['shrug'], martillo: ['hammer'], frances: ['skull crusher'], elevacion: ['raise'],
+  patada: ['kickback'], lateral: ['lateral'], inclinado: ['incline'], declinado: ['decline'], unilateral: ['single', 'one arm', 'one leg'], banda: ['band'],
+  hiperextension: ['hyperextension'], bulgara: ['bulgarian'], bicep: ['biceps'], tricep: ['triceps'], rumano: ['romanian'], agarre: ['grip'],
+  neutro: ['neutral', 'parallel'], apoyado: ['supported'], apoyada: ['supported'], asistido: ['assisted'], asistida: ['assisted'], inclinada: ['incline'] };
+const catHay = [];
+function catSearch(q, limit = 20) {
+  let t = fold(q).replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9 -]+/g, ' ');
+  CAT_PHRASES.forEach(([a, b]) => { t = t.replace(a, b); });
+  const alts = t.split(/\s+/).filter(w => w.length > 1 && !/^\d+$/.test(w) && !CAT_STOP.includes(w)).map(w => {
+    const bases = [w, ...(w.endsWith('s') ? [w.slice(0, -1)] : []), ...(w.endsWith('es') ? [w.slice(0, -2)] : [])];
+    return [...new Set(bases.flatMap(b => [b, ...(CAT_SYN[b] || [])]))];
+  });
+  if (!alts.length) return [];
+  const need = alts.length <= 2 ? alts.length : Math.ceil(alts.length / 2); // en consultas largas basta con la mitad de las palabras; las que más coinciden salen primero
+  const out = [];
+  CAT.forEach((e, i) => {
+    const hay = catHay[i] || (catHay[i] = fold([e[1], e[4] || '', ...(e[5] || [])].join(' ')));
+    const words = hay.split(/[^a-z0-9]+/);
+    let score = e[4] ? 0.5 : 0, matched = 0;
+    for (const a of alts) {
+      const hit = a.filter(x => hay.includes(x));
+      if (!hit.length) continue;
+      matched++;
+      score += hit.some(x => words.includes(x)) ? 2 : 1;
+    }
+    if (matched >= need) out.push({ i, score: score - hay.length / 1000 });
+  });
+  return out.sort((a, b) => b.score - a.score).slice(0, limit).map(x => x.i);
+}
+// Buscador del catálogo. pre 'm' (hoja de músculos / sección Músculos del editor): copia solo los músculos.
+// pre 'n' (ejercicio nuevo): rellena también el nombre y el tipo.
+const catBlockHTML = (pre = 'm', ph = 'Buscar en el catálogo: sentadilla, remo…') => `<div class="csearch"><input id="${pre}search" type="text" placeholder="${ph}" autocomplete="off" aria-label="Buscar ejercicio en el catálogo"><div id="${pre}res"></div></div>`;
+function catBind(bg, pre = 'm') {
+  const inp = bg.querySelector(`#${pre}search`), box = bg.querySelector(`#${pre}res`), act = pre === 'n' ? 'catPick' : 'muscleCat';
+  if (!inp) return;
+  inp.addEventListener('input', () => {
+    const q = inp.value.trim();
+    if (!q) { box.innerHTML = ''; return; }
+    const r = catSearch(q);
+    box.innerHTML = r.length ? `<div class="plist cres">${r.map(i => `<div data-a="${act}" data-i="${i}"><span>${esc(CAT[i][4] || CAT[i][1])}</span><span class="muted small">${CAT[i][2].map(m => MUSCLE_ES[m]).join(', ')}</span></div>`).join('')}</div>`
+      : '<p class="muted small">Sin resultados. Prueba con otra palabra, en español o en inglés.</p>';
+  });
+}
+
+// Chips de músculos: apagado (0) → principal (1) → secundario (2) → apagado
+const chipsHTML = r => MUSCLES.map(m => { const st = r.p.includes(m) ? 1 : r.s.includes(m) ? 2 : 0;
+  return `<button class="mc st${st}" data-a="muscleChip" data-m="${m}" data-st="${st}">${MUSCLE_ES[m]}</button>`; }).join('');
+const chipsRead = root => {
+  const p = [], s = [];
+  root.querySelectorAll('[data-a="muscleChip"]').forEach(b => { if (b.dataset.st === '1') p.push(b.dataset.m); else if (b.dataset.st === '2') s.push(b.dataset.m); });
+  return { p, s };
+};
+function muscleSheet(name) {
+  const k = norm(name), r = musclesFor(name);
+  sheet(`<h3>Músculos</h3><p class="muted">${esc(name)}</p>
+    ${catBlockHTML()}
+    <p class="muted small">Toca un músculo para alternar: <b style="color:var(--ok)">principal</b> · <b style="color:var(--ac)">secundario</b> · apagado.</p>
+    <div class="mchips">${chipsHTML(r)}</div>
+    <button class="wide btn-ok confirm mt" id="mcsave">Guardar</button>${S.exMuscles[k] ? '<button class="wide mt" id="mcreset">Restablecer a sugerido</button>' : ''}`, bg => {
+    catBind(bg);
+    bg.querySelector('#mcsave').onclick = () => { S.exMuscles[k] = chipsRead(bg); save(); closeSheet(); render(); toast('Músculos guardados ✅'); };
+    const rs = bg.querySelector('#mcreset');
+    if (rs) rs.onclick = () => { delete S.exMuscles[k]; save(); closeSheet(); render(); toast('Restablecido'); };
+  });
+}
+const MIT = (who, kind = 'documentation files') => `MIT License
+
+Copyright (c) 2026 ${who}
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated ${kind} (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.`;
+function creditsSheet() {
+  sheet(`<h3>Créditos y licencias</h3>
+    <p><b>MuscleMap</b> · Melih Colpan<br><span class="muted small">Los trazos del cuerpo del mapa muscular están convertidos de este proyecto, con licencia MIT: github.com/melihcolpan/MuscleMap</span></p>
+    <details><summary class="muted">Texto de la licencia</summary><pre class="lic">${esc(MIT('Melih Colpan'))}</pre></details>
+    <p class="mt"><b>Exercises Dataset</b> · Hasan Emir Yıldırım<br><span class="muted small">Los nombres y músculos del catálogo de ejercicios proceden de este dataset, con licencia MIT (solo texto; no se usan sus imágenes ni vídeos): github.com/hasaneyldrm</span></p>
+    <details><summary class="muted">Texto de la licencia</summary><pre class="lic">${esc(MIT('Hasan Emir Yıldırım', 'documentation and data files'))}</pre></details>
+    <button class="wide mt" id="cc">Cerrar</button>`, bg => { bg.querySelector('#cc').onclick = () => closeSheet(); });
+}
+
+/* ---- Progreso → Medidas ---- */
+let measSel = null;
+const measSeries = k => S.measures.filter(x => x.values[k] != null).map(x => ({ id: x.id, date: x.date, v: x.values[k] }));
+const fmtM = (v, m) => fmtN(v) + ' ' + m.unit;
+const fmtDelta = (d, m) => { d = r2(d); return (d > 0 ? '+' : d < 0 ? '−' : '') + fmtN(Math.abs(d)) + ' ' + m.unit; };
+function renderProgMedidas() {
+  const ms = S.measures;
+  let h = '<button class="wide btn-ok" data-a="measureNew">+ Nueva medición</button>';
+  if (!ms.length) return h + '<div class="empty">Aún no hay mediciones. Registra la primera con una cinta métrica y verás aquí cómo evolucionan.</div>';
+  const withData = MEASURES.filter(m => ms.some(x => x.values[m.k] != null));
+  if (!withData.some(m => m.k === measSel)) measSel = withData.find(m => ms[ms.length - 1].values[m.k] != null).k;
+  const M = MEAS_BY_KEY[measSel], ser = measSeries(measSel);
+  const last = ser[ser.length - 1], prev = ser[ser.length - 2];
+  h += `<select class="mt" data-ch="measure" aria-label="Medida">${withData.map(m => `<option value="${m.k}" ${m.k === measSel ? 'selected' : ''}>${m.label}</option>`).join('')}</select>
+    <div class="tiles"><div class="tile"><span>Última</span><b>${fmtM(last.v, M)}</b><span>${fmtShort(last.date)}</span></div>
+    <div class="tile"><span>Vs. anterior</span><b>${prev ? fmtDelta(last.v - prev.v, M) : '—'}</b><span>&nbsp;</span></div>
+    <div class="tile"><span>Desde el inicio</span><b>${prev ? fmtDelta(last.v - ser[0].v, M) : '—'}</b><span>&nbsp;</span></div></div>
+    <div class="chart">${chartSVG(ser.map(p => ({ x: p.date, y: p.v })), v => fmtN(v) + ' ' + M.unit)}</div><h2>Registros</h2>`;
+  for (let i = ms.length - 1; i >= 0; i--) {
+    const x = ms[i];
+    h += `<div class="mrow" data-a="measureEdit" data-id="${esc(x.id)}"><div class="mh"><b>${fmtDate(x.date)}</b><span class="muted">✎</span></div>`;
+    MEASURES.filter(m => x.values[m.k] != null).forEach(m => {
+      const s = measSeries(m.k), p = s[s.findIndex(q => q.id === x.id) - 1];
+      h += `<div class="mv"><span>${m.label}</span><span>${fmtM(x.values[m.k], m)}${p ? ` <em class="dl">${fmtDelta(x.values[m.k] - p.v, m)}</em>` : ''}</span></div>`;
+    });
+    h += (x.note ? `<div class="muted small mn">${esc(x.note)}</div>` : '') + '</div>';
+  }
+  return h;
+}
+const MEAS_NUM = /^\d+(?:[.,]\d+)?$/;
+const dateStr = ts => { const d = new Date(ts); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function measureSheet(id) {
+  const cur = id ? S.measures.find(x => x.id === id) : null;
+  const hint = k => { for (let i = S.measures.length - 1; i >= 0; i--) if (S.measures[i].values[k] != null) return S.measures[i].values[k]; return null; };
+  let h = `<div class="mhd"><h3>${cur ? 'Editar medición' : 'Nueva medición'}</h3><button class="info" data-a="measureInfo" data-k="_gen" aria-label="Consejos generales">ⓘ</button></div>
+    <div class="guide" id="g__gen" hidden><p>${MEAS_TIPS}</p></div>
+    <label class="field"><span>Fecha</span><input id="m_date" type="date" value="${dateStr(cur ? cur.date : Date.now())}"></label>`;
+  let grp = '';
+  MEASURES.forEach(m => {
+    if (m.group !== grp) { grp = m.group; h += `<div class="mgroup">${grp}</div>`; }
+    const v = cur && cur.values[m.k] != null ? fmtN(cur.values[m.k]) : '', ph = hint(m.k);
+    h += `<div class="mf"><div class="mfh"><label for="m_${m.k}">${m.label} <small>${m.unit}</small></label>
+      <button class="info" data-a="measureInfo" data-k="${m.k}" aria-label="Cómo medir: ${m.label}">ⓘ</button></div>
+      <div class="mfi"><button data-a="measureStep" data-k="${m.k}" data-d="-1" aria-label="menos">−</button>
+        <input id="m_${m.k}" type="text" inputmode="decimal" autocomplete="off" value="${v}" placeholder="${ph != null ? fmtN(ph) : ''}">
+        <button data-a="measureStep" data-k="${m.k}" data-d="1" aria-label="más">+</button></div>
+      <div class="guide" id="g_${m.k}" hidden>${m.img ? `<img src="${m.img}" alt="Cómo medir: ${m.label}" loading="lazy" onerror="this.remove()">` : ''}<p>${m.guia}</p></div></div>`;
+  });
+  h += `<label class="field mt"><span>Nota (opcional)</span><input id="m_note" type="text" maxlength="200" value="${esc(cur ? cur.note : '')}"></label>
+    <button class="wide btn-ok confirm" id="msave">Guardar</button>${cur ? '<button class="wide btn-dan mt" id="mdel">Eliminar medición</button>' : ''}`;
+  sheet(h, bg => {
+    bg.querySelector('#msave').onclick = () => {
+      const dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(bg.querySelector('#m_date').value);
+      if (!dm) { toast('Elige una fecha válida'); return; }
+      const values = {};
+      for (const m of MEASURES) {
+        const raw = bg.querySelector('#m_' + m.k).value.trim();
+        if (!raw) continue;
+        const [lo, hi] = MEAS_RANGE[m.unit], n = MEAS_NUM.test(raw) ? parseNum(raw) : NaN;
+        if (!(n >= lo && n <= hi)) { toast(`«${m.label}» debe ser un número entre ${lo} y ${hi} ${m.unit}`); return; }
+        values[m.k] = r2(n);
+      }
+      if (!Object.keys(values).length) { toast('Escribe al menos una medida'); return; }
+      const date = new Date(+dm[1], +dm[2] - 1, +dm[3], 12).getTime(), note = bg.querySelector('#m_note').value.trim();
+      if (cur) Object.assign(cur, { date, values, note }); else S.measures.push({ id: uid(), date, values, note });
+      S.measures.sort((a, b) => a.date - b.date);
+      save(); closeSheet(); render(); toast('Medición guardada ✅');
+    };
+    const del = bg.querySelector('#mdel');
+    if (del) del.onclick = () => ask('¿Eliminar esta medición?', 'No se puede deshacer.', 'Eliminar', () => { S.measures = S.measures.filter(x => x !== cur); save(); render(); }, true);
+  });
 }
 function chartSVG(pts, fmt) {
   const W = 340, H = 200, L = 8, R = 8, T = 22, B = 24;
@@ -909,6 +1341,7 @@ function renderSettings() {
       <div class="muted small mt">Almacenamiento persistente: ${persisted === null ? 'no disponible' : persisted ? '✅ concedido' : '⚠️ no concedido (instala la app para obtenerlo)'}</div></div>
     <h2>Zona peligrosa</h2>
     <button class="wide btn-dan" data-a="wipe">Borrar todos los datos</button>
+    <button class="wide btn-ghost mt" data-a="credits">Créditos y licencias</button>
     <p class="muted small mt" style="text-align:center">GymLog v${APP_VERSION} · todo se guarda solo en este dispositivo</p></main>`;
 }
 function backupBlob() {
@@ -984,6 +1417,7 @@ function editEx(di, xi) {
   let mode = x.mode || 'peso', opt = !!x.optional;
   const steps = [0.5, 1, 1.25, 2, 2.5, 5];
   sheet(`<h3>${isNew ? 'Nuevo ejercicio' : 'Editar ejercicio'}</h3>
+    ${isNew ? catBlockHTML('n', 'Buscar en el catálogo para rellenar: sentadilla, remo…') : ''}
     <label class="field"><span>Nombre</span><input id="fn" type="text" value="${esc(x.name)}"></label>
     <div class="field"><span>Tipo</span><div class="seg" id="md">${[['peso', 'Peso + reps'], ['reps', 'Solo reps'], ['tiempo', 'Tiempo']].map(([m, l]) => `<button data-m="${m}" class="${m === mode ? 'on' : ''}">${l}</button>`).join('')}</div></div>
     <div class="row2"><label class="field"><span>Series</span><input id="fs" type="text" inputmode="numeric" value="${x.sets}"></label>
@@ -991,9 +1425,14 @@ function editEx(di, xi) {
     <div class="row2"><label class="field"><span>Descanso (segundos)</span><input id="ft" type="text" inputmode="numeric" value="${x.rest ?? ''}"></label>
       <label class="field"><span>Incremento kg</span><select id="fk">${steps.map(s => `<option value="${s}" ${+x.step === s ? 'selected' : ''}>${fmtN(s)}</option>`).join('')}</select></label></div>
     <button class="tg" id="fo"><span>Opcional (si sobra energía)</span><i class="${opt ? 'on' : ''}">${opt ? 'Sí' : 'No'}</i></button>
+    <details id="fm"><summary class="muted">Músculos que trabaja</summary><p class="muted small">Alterna: principal · secundario · apagado. Solo se guarda si lo cambias.</p>
+      ${isNew ? '' : catBlockHTML()}
+      <div class="mchips">${chipsHTML(musclesFor(x.name))}</div></details>
     <button class="wide btn-ok confirm" id="sv">Guardar</button>${isNew ? '' : '<button class="wide btn-dan mt" id="del">Eliminar ejercicio</button>'}`, bg => {
     bg.querySelector('#md').onclick = e => { const b = e.target.closest('[data-m]'); if (!b) return; mode = b.dataset.m; bg.querySelectorAll('#md button').forEach(z => z.classList.toggle('on', z === b)); };
     bg.querySelector('#fo').onclick = e => { opt = !opt; const i = e.currentTarget.querySelector('i'); i.className = opt ? 'on' : ''; i.textContent = opt ? 'Sí' : 'No'; };
+    const fm0 = JSON.stringify(chipsRead(bg));
+    catBind(bg, isNew ? 'n' : 'm');
     if (isNew) setTimeout(() => bg.querySelector('#fn').focus(), 60);
     bg.querySelector('#sv').onclick = () => {
       const name = bg.querySelector('#fn').value.trim();
@@ -1005,12 +1444,21 @@ function editEx(di, xi) {
       const rest = parseNum(bg.querySelector('#ft').value); x.rest = isNaN(rest) ? null : Math.max(0, Math.round(rest));
       x.step = +bg.querySelector('#fk').value;
       if (isNew) day.exercises.push(x);
+      // Músculos: solo se guardan si el usuario los cambió; al renombrar, el mapeo del nombre anterior se copia al nuevo
+      const oldK = norm(oldName), newK = norm(name), nowM = chipsRead(bg);
+      const carry = () => {
+        if (!S.exMuscles[newK] && S.exMuscles[oldK]) S.exMuscles[newK] = S.exMuscles[oldK];
+        const used = S.routine.some(d => d.exercises.some(e => norm(e.name) === oldK)) || S.sessions.some(s => s.exercises.some(e => norm(e.name) === oldK));
+        if (!used) delete S.exMuscles[oldK];
+      };
+      if (JSON.stringify(nowM) !== fm0) S.exMuscles[newK] = nowM;
       save(); closeSheet(); render();
       const inHist = !isNew && norm(oldName) !== norm(name) && S.sessions.some(s => s.exercises.some(e => norm(e.name) === norm(oldName)));
+      if (!isNew && oldK !== newK && !inHist) { carry(); save(); }
       if (inHist) ask('¿Renombrar también en el historial?', `Así «${esc(name)}» conserva el progreso de «${esc(oldName)}». Si no, empezará de cero.`, 'Renombrar', () => {
         S.sessions.forEach(s => s.exercises.forEach(e => { if (norm(e.name) === norm(oldName)) e.name = name; }));
         S.routine.forEach(d => d.exercises.forEach(e => { if (norm(e.name) === norm(oldName)) e.name = name; }));
-        save(); render(); toast('Historial actualizado');
+        carry(); save(); render(); toast('Historial actualizado');
       });
     };
     const del = bg.querySelector('#del');
@@ -1085,6 +1533,52 @@ const ACT = {
   },
   hist: d => openHistory(d.id),
   metric: d => { progMetric = +d.v; render(); },
+  progTab: d => { progTab = d.v; render(); },
+  bodyGender: d => { S.settings.bodyGender = d.v === 'female' ? 'female' : 'male'; save(); render(); },
+  musWin: d => { musWin = +d.v === 30 ? 30 : 7; render(); },
+  muscle: d => { musSel = musSel === d.m ? null : d.m; render(); },
+  muscleEdit: d => muscleSheet(d.n),
+  muscleChip: (d, el) => { const n = (+el.dataset.st + 1) % 3; el.dataset.st = n; el.className = 'mc st' + n; },
+  // Copia los músculos de un resultado del catálogo a los chips; no guarda hasta pulsar Guardar
+  muscleCat: d => {
+    const e = CAT[+d.i], root = $('.sheet');
+    if (!e || !root) return;
+    root.querySelectorAll('[data-a="muscleChip"]').forEach(b => { const n = e[2].includes(b.dataset.m) ? 1 : e[3].includes(b.dataset.m) ? 2 : 0; b.dataset.st = n; b.className = 'mc st' + n; });
+    const det = root.querySelector('#fm'); if (det) det.open = true;
+    toast('Músculos copiados: pulsa Guardar');
+  },
+  // Ejercicio nuevo: rellena nombre, músculos y tipo (si el catálogo lo sugiere) desde un resultado; no guarda hasta Guardar
+  catPick: d => {
+    const e = CAT[+d.i], root = $('.sheet');
+    if (!e || !root) return;
+    ACT.muscleCat(d);
+    const name = e[4] || e[1], fn = root.querySelector('#fn');
+    if (fn) fn.value = name.charAt(0).toUpperCase() + name.slice(1);
+    const md = e[6] && root.querySelector(`#md [data-m="${e[6]}"]`); if (md) md.click();
+    const box = root.querySelector('#nres'), inp = root.querySelector('#nsearch');
+    if (box) box.innerHTML = ''; if (inp) inp.value = '';
+    toast('Rellenado: ajusta series y descanso, y pulsa Guardar');
+  },
+  credits: creditsSheet,
+  measureNew: () => measureSheet(),
+  measureEdit: d => measureSheet(d.id),
+  // −/+ del formulario: sobre un campo vacío parten de la sugerencia (último valor) o del valor típico de la medida
+  measureStep: d => {
+    const m = MEAS_BY_KEY[d.k], inp = $('#m_' + d.k);
+    if (!inp) return;
+    let v = MEAS_NUM.test(inp.value.trim()) ? parseNum(inp.value) : parseNum(inp.placeholder);
+    if (isNaN(v)) v = m.def;
+    const [lo, hi] = MEAS_RANGE[m.unit];
+    inp.value = fmtN(Math.min(hi, Math.max(lo, v + (+d.d) * 0.5)));
+  },
+  // ⓘ: despliega la guía de esa medida en línea (solo una abierta a la vez; pulsar de nuevo la pliega)
+  measureInfo: d => {
+    const g = $('#g_' + d.k);
+    if (!g) return;
+    const open = g.hasAttribute('hidden');
+    document.querySelectorAll('.sheet .guide').forEach(x => x.setAttribute('hidden', ''));
+    if (open) { g.removeAttribute('hidden'); g.scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+  },
   tog: d => { S.settings[d.k] = !S.settings[d.k]; save(); syncRest(); render(); if (d.k === 'notify') askNotify(); },
   testAlarm: () => { audio(); alarm(); },
   restAdj: d => { S.settings.restDefault = Math.max(15, Math.min(600, S.settings.restDefault + +d.v)); save(); render(); },
@@ -1104,8 +1598,14 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]');
   if (el && ACT[el.dataset.a]) ACT[el.dataset.a](el.dataset, el, e);
 });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' && e.key !== ' ') return;
+  const el = e.target.closest && e.target.closest('g.bm[data-a]');
+  if (el) { e.preventDefault(); ACT.muscle(el.dataset); }
+});
 document.addEventListener('change', e => {
   if (e.target.dataset.ch === 'progEx') { progEx = e.target.value; progMetric = 0; render(); }
+  if (e.target.dataset.ch === 'measure') { measSel = e.target.value; render(); }
 });
 
 /* botones +/− con repetición al mantener pulsado */

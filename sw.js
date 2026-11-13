@@ -1,8 +1,9 @@
 // Service worker: precachea la app y sirve desde caché (funciona 100% offline).
 // Estrategia stale-while-revalidate: abre al instante desde caché y, si hay red,
 // descarga la versión nueva en segundo plano para la próxima apertura.
-const CACHE = 'gymlog-v3'; // mantener igual que APP_VERSION en index.html
-const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png'];
+const CACHE = 'gymlog-v8'; // mantener igual que APP_VERSION en index.html
+const ASSETS = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-maskable-512.png', './src/body-paths.js', './src/exercise-catalog.js',
+  './assets/medidas/cuello.webp', './assets/medidas/hombros.webp', './assets/medidas/pecho.webp', './assets/medidas/cintura.webp', './assets/medidas/cadera.webp', './assets/medidas/biceps.webp', './assets/medidas/antebrazo.webp', './assets/medidas/muslo.webp', './assets/medidas/pantorrilla.webp'];
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)).then(() => self.skipWaiting()));
