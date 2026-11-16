@@ -44,13 +44,15 @@ function makeClock(start) {
  * @param {'granted'|'denied'|'default'} [o.permission='granted']
  * @param {boolean} [o.grantOnRequest=true]  respuesta a Notification.requestPermission()
  * @param {boolean} [o.notifications=true]   false = navegador sin API de notificaciones
+ * @param {boolean|{permission?: string, grantOnRequest?: boolean}} [o.native]  simula el APK de Capacitor (window.Capacitor con plugins falsos);
+ *        env.native.calls registra cada llamada a los plugins y env.native.perm el permiso de notificaciones ('granted'|'denied'|'prompt')
  */
 async function loadApp(o = {}) {
   const clock = makeClock(T0);
   const env = {
     clock, visibility: 'visible',
     permission: o.permission || 'granted', grantOnRequest: o.grantOnRequest !== false, permRequests: 0,
-    notes: [], vibrations: [], oscillators: [], audios: [], errors: []
+    notes: [], vibrations: [], oscillators: [], audios: [], errors: [], swRegs: 0, native: null
   };
 
   const vc = new VirtualConsole();
@@ -100,6 +102,20 @@ async function loadApp(o = {}) {
       def('storage', { persisted: async () => true, persist: async () => true });
       def('mediaSession', { metadata: null });
 
+      // Android nativo (Capacitor): el puente inyecta window.Capacitor; aquí se simulan los plugins que usa la app
+      if (o.native) {
+        const n = o.native === true ? {} : o.native;
+        const nat = env.native = { calls: [], perm: n.permission || 'granted', grantOnRequest: n.grantOnRequest !== false };
+        const rec = (fn, ret) => async args => { nat.calls.push({ fn, args }); return typeof ret === 'function' ? ret(args) : ret; };
+        const LocalNotifications = {
+          checkPermissions: async () => ({ display: nat.perm }),
+          requestPermissions: async () => { nat.calls.push({ fn: 'requestPermissions' }); if (nat.perm === 'prompt') nat.perm = nat.grantOnRequest ? 'granted' : 'denied'; return { display: nat.perm }; },
+          createChannel: rec('createChannel'), schedule: rec('schedule', { notifications: [] }), cancel: rec('cancel'),
+          removeAllDeliveredNotifications: rec('removeAllDeliveredNotifications'), getPending: rec('getPending', { notifications: [] })
+        };
+        win.Capacitor = { isNativePlatform: () => true, getPlatform: () => 'android', Plugins: { LocalNotifications } };
+      }
+
       // notificaciones + service worker
       if (o.notifications !== false) {
         win.Notification = class { static get permission() { return env.permission; }
@@ -108,7 +124,7 @@ async function loadApp(o = {}) {
           showNotification: async (title, opts) => { env.notes.push({ title, opts, at: clock.now, closed: false, close() { this.closed = true; } }); },
           getNotifications: async ({ tag } = {}) => env.notes.filter(n => !n.closed && (!tag || n.opts.tag === tag))
         };
-        def('serviceWorker', { ready: Promise.resolve(reg), controller: {}, register: async () => reg });
+        def('serviceWorker', { ready: Promise.resolve(reg), controller: {}, register: async () => { env.swRegs++; return reg; } });
       }
     }
   });
@@ -136,6 +152,7 @@ async function loadApp(o = {}) {
     // Empieza la sesión del día i (0 = Día 1) pulsando su botón en la pantalla de inicio
     async start(i = 0) { app.click(`[data-a="start"][data-id="${app.S.routine[i].id}"]`); await flush(); },
     async confirm() { app.click('[data-a="confirm"]'); await flush(); },
+    get native() { return env.native; },
     beeps: () => env.oscillators.length / 6, // cada alarma = 6 pitidos
     close() {
       win.close();

@@ -206,7 +206,7 @@ input.big{font-size:32px;font-weight:700;text-align:center;min-height:64px}
 'use strict';
 /* ============ utilidades ============ */
 const KEY = 'gymlog.v1';
-const APP_VERSION = 8; // mantener igual que CACHE en sw.js ('gymlog-v8')
+const APP_VERSION = 10; // mantener igual que CACHE en sw.js ('gymlog-v10')
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -226,6 +226,36 @@ const ago = ts => { const a = new Date(ts), b = new Date(); a.setHours(0,0,0,0);
 const norm = s => String(s || '').trim().toLowerCase();
 const parseNum = s => { const n = parseFloat(String(s).replace(',', '.')); return isFinite(n) ? n : NaN; };
 const firstNum = s => { const m = String(s || '').match(/\d+(?:[.,]\d+)?/); return m ? parseNum(m[0]) : 0; };
+
+/* ============ plataforma (web / Android nativo) ============ */
+// En el APK de Capacitor existe window.Capacitor y los avisos los programa el sistema Android; en la web (PWA) no,
+// y la app se comporta como siempre (service worker, Notification API).
+const NATIVE = !!(window.Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform());
+const nativePlugin = name => (NATIVE ? (Capacitor.Plugins && Capacitor.Plugins[name]) || (typeof Capacitor.registerPlugin === 'function' ? Capacitor.registerPlugin(name) : null) : null);
+const LN = nativePlugin('LocalNotifications');
+const TEST_ALARM_ID = 9001, TEST_TIMES = [[15, '15 s'], [60, '1 min'], [300, '5 min'], [1800, '30 min']];
+let nativeTestSecs = 15;
+// Permiso de notificaciones del sistema ('granted' | 'denied' | 'prompt'); con ask = true lo pide si falta
+async function nativePermission(ask) {
+  try {
+    let p = (await LN.checkPermissions()).display;
+    if (p !== 'granted' && ask) p = (await LN.requestPermissions()).display;
+    return p;
+  } catch (e) { return 'denied'; }
+}
+// Canal de los avisos de descanso según los interruptores de sonido y vibración. Los cuatro canales (descanso-sv, -s, -v, -n)
+// los crea el código nativo (MainActivity.java) con USAGE_ALARM: suenan aunque el móvil esté en vibración, por altavoz y auriculares.
+const restChannel = () => 'descanso-' + ((S.settings.sound ? 's' : '') + (S.settings.vibrate ? 'v' : '') || 'n');
+// Ajustes → «Probar alarma»: sirve para comprobar en el móvil que el aviso suena con la pantalla bloqueada
+async function nativeTestAlarm() {
+  if (!LN) return;
+  if (await nativePermission(true) !== 'granted') { toast('⚠️ Permite las notificaciones de GymLog en los ajustes del móvil'); return; }
+  try {
+    await LN.schedule({ notifications: [{ id: TEST_ALARM_ID, title: 'Prueba de alarma', body: 'Si ves esto con la pantalla bloqueada, el descanso te avisará 💪', channelId: restChannel(),
+      schedule: { at: new Date(Date.now() + nativeTestSecs * 1000), allowWhileIdle: true }, isExactNotification: true }] });
+    toast(`Alarma de prueba en ${TEST_TIMES.find(t => t[0] === nativeTestSecs)[1]}: bloquea la pantalla y espera`);
+  } catch (e) { toast('⚠️ No se pudo programar la alarma: ' + ((e && e.message) || e)); }
+}
 
 /* ============ rutina por defecto (de Rutina.txt) ============ */
 const E = (name, sets, reps, rest, o = {}) => ({ id: uid(), name, sets, reps, rest, mode: 'peso', step: 2.5, optional: false, ...o });
@@ -1326,11 +1356,14 @@ function renderSettings() {
     ${tg('vibrate', 'Vibración')}
     ${tg('sound', 'Sonido al terminar el descanso')}
     ${tg('notify', 'Notificación con la pantalla bloqueada')}
-    ${st.notify ? `<p class="muted small">${!canNotify() ? '⚠️ Este navegador no admite notificaciones (en iPhone, instala la app en la pantalla de inicio).'
+    ${st.notify && !NATIVE ? `<p class="muted small">${!canNotify() ? '⚠️ Este navegador no admite notificaciones (en iPhone, instala la app en la pantalla de inicio).'
       : Notification.permission === 'granted' ? '✅ Notificaciones permitidas.'
       : Notification.permission === 'denied' ? '⚠️ Notificaciones bloqueadas: actívalas en los ajustes del navegador para esta web.'
       : 'Se pedirá permiso al empezar una sesión.'}</p>` : ''}
     <button class="wide mt" data-a="testAlarm">🔔 Probar alarma</button>
+    ${NATIVE ? `<div class="seg mt">${TEST_TIMES.map(([v, l]) => `<button data-a="testSecs" data-v="${v}" class="${v === nativeTestSecs ? 'on' : ''}">${l}</button>`).join('')}</div>
+    <button class="wide mt" data-a="nativeTest">⏱ Probar alarma (${TEST_TIMES.find(t => t[0] === nativeTestSecs)[1]})</button>
+    <p class="muted small">Pulsa y bloquea la pantalla: pasado el tiempo elegido debe sonar y vibrar, aunque el móvil esté en vibración. Los tiempos largos sirven para comprobar el ahorro de batería. Si no suena, revisa los permisos de batería de GymLog en los ajustes del móvil.</p>` : ''}
     <p class="muted small">La alarma se repite hasta que toques la pantalla o desbloquees el móvil (máx. ${RING_MAX / 1000} s). Suena con el volumen <b>multimedia</b>: si no la oyes, súbelo.</p>
     <h2>Rutina</h2>
     <button class="wide day" data-a="go" data-v="editor"><span><b>Editar rutina</b><br><small>${S.routine.length} días · cambia días y ejercicios</small></span><span class="muted">›</span></button>
@@ -1581,6 +1614,8 @@ const ACT = {
   },
   tog: d => { S.settings[d.k] = !S.settings[d.k]; save(); syncRest(); render(); if (d.k === 'notify') askNotify(); },
   testAlarm: () => { audio(); alarm(); },
+  nativeTest: nativeTestAlarm,
+  testSecs: d => { nativeTestSecs = +d.v; render(); },
   restAdj: d => { S.settings.restDefault = Math.max(15, Math.min(600, S.settings.restDefault + +d.v)); save(); render(); },
   export: doExport,
   share: doShare,
@@ -1626,7 +1661,7 @@ document.addEventListener('contextmenu', e => { if (e.target.closest('[data-step
 render();
 askPersist().then(() => { if (view === 'settings') render(); });
 if (S.active) { requestWake(); syncRest(); }
-if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+if (!NATIVE && 'serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 </script>
 </body>
 </html>

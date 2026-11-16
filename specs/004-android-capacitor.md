@@ -37,7 +37,8 @@ Nueva sección `/* ============ plataforma ============ */` con:
 - Al empezar o cambiar un descanso (`syncRest`), se programan **tres notificaciones con ids fijos**: la principal en `T.end` y dos de refuerzo en `T.end + 10 s` y `+ 20 s` (mismo patrón que el `RENOTIFY_AT` actual, que es lo único que hace vibrar el móvil bloqueado). Siempre se reprograma con los mismos ids, así que `+15`, `−15` y cambios del descanso no dejan alarmas viejas.
 - **Cancelar** al saltar el descanso, terminar la sesión o desactivar notificaciones.
 - **Sin duplicados con la app a la vista:** el sistema muestra la notificación aunque la app esté en primer plano. Por eso, 2 s antes del final, si la página **sigue visible** se cancelan las pendientes (la alarma en la app ya suena con `alarm()`); si la pantalla está bloqueada ese código no llega a ejecutarse y las notificaciones se quedan. Al volver a visible se cancelan las de refuerzo y se retiran las entregadas (equivale al `closeRestNote()` actual).
-- **Canal** `descanso`: importancia alta, vibración, visibilidad pública (se ve en pantalla de bloqueo). Se crea al arrancar en nativo. Su sonido no se podrá cambiar después sin reinstalar, así que se usa el predeterminado.
+- **Canales de alarma, creados en código nativo** (`MainActivity.java`, porque el plugin no permite elegir el tipo de audio): el aviso usa `USAGE_ALARM`, que **suena aunque el móvil esté en vibración o silencio**, por el altavoz y por los auriculares conectados (volumen de *alarma*, que es independiente del de notificaciones y del de cada dispositivo). Se crean cuatro canales según los interruptores de Ajustes: `descanso-sv` (sonido y vibración), `descanso-s` (solo sonido), `descanso-v` (solo vibración) y `descanso-n` (ninguno, notificación silenciosa). Todos con importancia alta y visibilidad pública (se ve en pantalla de bloqueo), y la JS elige el canal al programar (`restChannel()`). El sonido de un canal no se puede cambiar una vez creado; para cambiarlo habría que usar otro id. Se borra el canal antiguo `descanso`.
+- **Una sola alarma a la vez:** el WebView sigue ejecutando JavaScript con la pantalla bloqueada (comprobado en el móvil), así que la alarma web antigua (`startRing`) seguiría pitando a la vez que la notificación. En nativo, con la página **oculta** no suena la alarma de la app (lo hace la notificación); con la página **visible** suena la de la app y se cancelan las notificaciones pendientes.
 - Alarma exacta con `isExactNotification: true` y `allowWhileIdle: true`.
 - **No** se usa el audio inaudible (`keepAlive`) en nativo.
 - Antes de programar se comprueba el permiso; si falta, no se programa y Ajustes lo explica.
@@ -45,8 +46,8 @@ Nueva sección `/* ============ plataforma ============ */` con:
 ### 4. Permisos y Android Manifest
 `POST_NOTIFICATIONS`, `VIBRATE`, y la alarma exacta según la decisión 3. Ajustes (solo en nativo) muestra: estado de notificaciones, estado de alarmas exactas con botón para abrir su configuración, y un aviso sobre **ahorro de batería** del fabricante (cómo excluir la app) con enlace de ayuda.
 
-### 5. Botón «Probar alarma (60 s)»
-Solo en nativo, en Ajustes. Programa una notificación de prueba a 60 s con el mismo canal. Sirve como **spike de la Fase 0** y se queda como herramienta permanente para que el usuario verifique su móvil.
+### 5. Botón «Probar alarma»
+Solo en nativo, en Ajustes. Un selector de tiempo **15 s · 1 min · 5 min · 30 min** (por defecto 15 s: 60 s resultaba largo para comprobar) y un botón que programa una notificación de prueba a ese tiempo, con el canal que corresponde a los interruptores de sonido y vibración. Los tiempos largos sirven para la prueba de ahorro de batería y de modo reposo (Doze). Sirve como **spike de la Fase 0** y se queda como herramienta permanente para que el usuario verifique su móvil.
 
 ### 6. Resto del comportamiento en nativo
 - **Service worker:** no se registra (la app va empaquetada; las actualizaciones llegan con el APK).
@@ -65,19 +66,23 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 
 - **CA-1** Sin `window.Capacitor`, `NATIVE` es falso y toda la suite existente pasa **sin modificarla**.
 - **CA-2** Con `Capacitor.isNativePlatform()` verdadero, `NATIVE` es verdadero y no se registra el service worker.
-- **CA-3** En nativo, al empezar un descanso se programan 3 notificaciones con ids fijos, canal `descanso`, la principal en `T.end` y los refuerzos en `+10 s` y `+20 s`.
+- **CA-3** En nativo, al empezar un descanso se programan 3 notificaciones con ids fijos, en el canal que corresponde a los interruptores (`restChannel()`), la principal en `T.end` y los refuerzos en `+10 s` y `+20 s`.
 - **CA-4** `+15`/`−15` reprograman las mismas ids con la hora nueva; Saltar, terminar la sesión y desactivar notificaciones las cancelan.
 - **CA-5** Con la página visible, 2 s antes del final se cancelan las pendientes; con la página oculta no se cancelan.
 - **CA-6** Al volver a visible se cancelan los refuerzos pendientes y se retiran las notificaciones entregadas.
 - **CA-7** Sin permiso de notificaciones no se programa nada; `askNotify` lo pide con el plugin y, si se concede, se programa el descanso en curso.
 - **CA-8** Con `S.settings.notify` desactivado no se programa nada.
 - **CA-9** Si la página estuvo congelada y vuelve más de 5 s tarde, no suena (igual que hoy).
-- **CA-10** Ajustes muestra el botón «Probar alarma (60 s)» solo en nativo, y programa una notificación de prueba a 60 s.
+- **CA-10** Ajustes muestra «Probar alarma» y un selector 15 s / 1 min / 5 min / 30 min (por defecto 15 s) solo en nativo; el botón programa una notificación exacta al tiempo elegido.
+- **CA-10e** `restChannel()` devuelve `descanso-sv`, `-s`, `-v` o `-n` según los interruptores de sonido y vibración; la JS no crea canales (los crea el código nativo).
+- **CA-10f** `MainActivity.java` crea los cuatro canales con `USAGE_ALARM`, importancia alta y visibilidad pública, y borra el canal antiguo `descanso`.
+- **CA-15** En nativo, con la página oculta no suena la alarma de la app (solo la notificación); con la página visible suena la de la app y se cancelan las pendientes.
 - **CA-11** Exportar y compartir en nativo usan `Filesystem` + `Share` y no `<a download>`.
 - **CA-12** En web, `askNotify`, `notifyRest` y `closeRestNote` siguen funcionando como hoy.
 - **CA-13** `scripts/sync-www.mjs` copia exactamente los archivos de la app a `www/` y no copia `sw.js`, `tests/`, `specs/`, `scripts/` ni `node_modules/`.
 - **CA-14** `capacitor.config.json` y `AndroidManifest.xml` declaran el `appId`, `webDir` y los permisos acordados.
-- **M-1** Con la pantalla bloqueada, la notificación suena y vibra a la hora del descanso (60, 90 y 180 s).
+- **M-1** Con la pantalla bloqueada, la notificación suena y vibra a la hora del descanso (15 s, 1 min y 5 min). **Resultado: OK a 15 s y 60 s**; faltan 5 min.
+- **M-7** Con auriculares Bluetooth conectados y el móvil en modo **vibración**, la notificación suena (por los auriculares y el altavoz) y vibra. **Resultado: OK.**
 - **M-2** Tres descansos seguidos de 90 s con pantalla bloqueada: suenan los tres.
 - **M-3** Con la app a la vista, al acabar el descanso solo suena la alarma de la app (sin notificación duplicada).
 - **M-4** Con ahorro de batería activado, sigue sonando (o se documenta cómo excluir la app).
@@ -88,10 +93,10 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 ### Fase 0
 - [x] Decidir `appId` y permiso de alarma exacta (ver «Decisiones»).
 - [x] Instalar Android Studio y el SDK (hecho 2026-11-16: SDK con `platform-tools`, `build-tools 36.0.0` y plataforma `android-37.0`).
-- [ ] `npm i` de Capacitor, `capacitor.config.json`, `npx cap add android`, `sync-www`.
-- [ ] Botón «Probar alarma (60 s)» y APK de depuración.
-- [ ] **Preparar el móvil** (solo hace falta antes de instalar el APK; se puede hacer en paralelo a lo anterior): activar las opciones de desarrollador (tocar 7 veces el «Número de compilación»), activar la **depuración USB**, conectarlo por cable y aceptar «¿Permitir depuración USB?». Comprobar con `adb devices`.
-- [ ] Instalar el APK en el móvil con `adb install`.
+- [x] `npm i` de Capacitor, `capacitor.config.json`, `npx cap add android`, `sync-www` (hecho 2026-11-16).
+- [x] Botón «Probar alarma (60 s)» y APK de depuración (`android/app/build/outputs/apk/debug/app-debug.apk`, 4,4 MB; app v9).
+- [x] **Preparar el móvil** (hecho; solo hacía falta antes de instalar el APK; se puede hacer en paralelo a lo anterior): activar las opciones de desarrollador (tocar 7 veces el «Número de compilación»), activar la **depuración USB**, conectarlo por cable y aceptar «¿Permitir depuración USB?». Comprobar con `adb devices`.
+- [x] Instalar el APK en el móvil con `adb install` (hecho: v9 y v10).
 - [ ] En el móvil, ajustar la batería para la app (en MagicOS: inicio manual / permitir actividad en segundo plano) **después** de la primera prueba, para comparar con y sin ajuste (M-4).
 - [ ] Probar M-1, M-2 y M-6 en el móvil; anotar resultados en esta spec.
 ### Fase 1
@@ -108,8 +113,27 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 2. **Móvil: Honor GFY-LX3, Android 14.** Honor usa MagicOS, que gestiona la batería de forma agresiva (suele matar procesos y alarmas en segundo plano si la app no está en modo de inicio manual/«permitir actividad en segundo plano»). Es el riesgo principal de esta spec y se verifica en el spike (M-1, M-2, M-4, M-6).
 3. **Alarma exacta: `USE_EXACT_ALARM`** (recomendación aceptada por simplicidad). Con `SCHEDULE_EXACT_ALARM` en Android 14 el permiso viene desactivado por defecto y, si el usuario no lo concede o lo revoca, Android elimina las alarmas programadas sin avisar; habría que construir y probar la pantalla de estado y la gestión de la revocación. Si en el futuro la app se publicara en Google Play, se revisará.
 4. **Android Studio:** instalación con `winget` (`Google.AndroidStudio`, 2026.2.2.8); si falla, la instala el usuario.
+5. **El aviso suena siempre** (también en vibración o silencio), por altavoz y auriculares: canales con `USAGE_ALARM`. Decidido el 2026-11-16 a partir de la prueba en el móvil.
+6. **Prueba:** selector de tiempo 15 s / 1 min / 5 min / 30 min.
+
+## Notas de la Fase 0
+- **JDK 21 obligatorio para compilar:** el proyecto que genera Capacitor 8 usa Gradle 8.14.3, que solo entiende hasta Java 24. El JDK 25 que trae Android Studio falla con `Unsupported class file major version 69`. Se instaló `Microsoft.OpenJDK.21` (`C:\Program Files\Microsoft\jdk-21.0.13.21-hotspot`) y se compila con `JAVA_HOME` apuntando a él solo en ese comando (no se cambió el Java del sistema).
+- **Compilar:** `node scripts/sync-www.mjs && npx cap sync android` y luego, en `android/`: `gradlew.bat assembleDebug` con `JAVA_HOME` (JDK 21) y `ANDROID_HOME` (`%LOCALAPPDATA%\Android\Sdk`). La primera compilación tardó ~13 min (descarga de Gradle y dependencias).
+- **Plugins sin bundler:** la app usa `Capacitor.Plugins.LocalNotifications` (con `registerPlugin` como respaldo). Se confirma en el móvil con el botón de prueba.
+
+## Resultados del spike en el móvil (Honor GFY-LX3, Android 14, MagicOS 8.0; 2026-11-16)
+- **M-1 (pantalla bloqueada): OK.** La notificación llegó puntual a los 60 s, sonó, vibró y se mostró en la pantalla de bloqueo, sin tocar ajustes de batería. `Capacitor.Plugins.LocalNotifications` funciona sin bundler y `USE_EXACT_ALARM` no pidió ningún permiso.
+- **Problema: con auriculares Bluetooth conectados solo vibra.** Causa (`dumpsys audio`): Android guarda un volumen **por dispositivo de salida** y por tipo de sonido; el volumen de *notificaciones* con Bluetooth (`bt_a2dp`) estaba en **0** (altavoz: 9; cableados: 14), mientras que el de *alarma* era 12 en Bluetooth y 15 en altavoz, y se reproduce por ambos. La web sí suena porque usa el volumen **multimedia** (9 en Bluetooth).
+- El canal `descanso` creado por el plugin quedó con `USAGE_NOTIFICATION`, sonido predeterminado, importancia 4 y visibilidad en pantalla bloqueada «sin definir» (`-1000`): el plugin no deja fijar el uso de audio ni aplica bien la visibilidad.
+- **Prueba con la v10 (canales `USAGE_ALARM` nativos), 2026-11-16: OK.**
+  - Auriculares Bluetooth conectados y móvil en vibración: suena y vibra. **El sonido sale por los auriculares y por el altavoz a la vez**: es el comportamiento de Android para las alarmas (se oye aunque los auriculares no estén puestos). Si resultara molesto habría que replantear el tipo de audio (ver «Riesgos»).
+  - Sin auriculares: suena.
+  - Interruptor «Sonido» desactivado: vibra sin sonar (canal `descanso-v`).
+  - Con eso quedan validados M-1 y M-7 con el botón de prueba.
+- **Decidido:** el aviso debe sonar **aunque el móvil esté en vibración**, por los auriculares o por el altavoz (decisión 5 más abajo). Con una sesión real, la alarma web antigua también sonó en modo vibración, con la pantalla encendida y bloqueada: es la alarma web (volumen multimedia, que Android no silencia en vibración) y el WebView sigue ejecutándola con la pantalla bloqueada.
 
 ## Riesgos
+- **Sonido doble (auriculares y altavoz):** con `USAGE_ALARM` Android lo reproduce por ambas salidas. Es lo que permite oírlo sin los auriculares puestos, pero quien los lleva puestos lo oye también por el altavoz. Si molesta, la alternativa es otro tipo de audio (más difícil de controlar y sin la garantía de sonar en vibración).
 - **Específicos del fabricante** (Xiaomi, Huawei, Samsung…): pueden matar alarmas aunque la app lo haga todo bien. Solo se descubre en el móvil real; de ahí el spike y el botón de prueba permanente.
 - **Límite de 9 minutos en Doze** con `allowWhileIdle`: descansos seguidos con el móvil quieto podrían retrasarse. Se mide en M-2 y M-6; si falla, se evalúa un servicio en primer plano.
 - **Plugins sin bundler:** si `Capacitor.Plugins` no se expone sin importar módulos, habrá que añadir un paso de empaquetado mínimo (rompería el «sin build»). Se confirma en el spike.
