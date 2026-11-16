@@ -84,7 +84,7 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 - **M-1** Con la pantalla bloqueada, la notificación suena y vibra a la hora del descanso (15 s, 1 min y 5 min). **Resultado: OK a 15 s, 1 min y 5 min.**
 - **M-7** Con auriculares Bluetooth conectados y el móvil en modo **vibración**, la notificación suena (por los auriculares y el altavoz) y vibra. **Resultado: OK.**
 - **M-2** Tres descansos seguidos de 90 s con pantalla bloqueada: suenan los tres.
-- **M-3** Con la app a la vista, al acabar el descanso solo suena la alarma de la app (sin notificación duplicada).
+- **M-3** Con la app a la vista, al acabar el descanso solo suena la alarma de la app (sin notificación duplicada). **Resultado: OK** (v11, descanso real).
 - **M-4** Con ahorro de batería activado, sigue sonando (o se documenta cómo excluir la app).
 - **M-5** Exportar respaldo desde la app y volver a importarlo en la misma app.
 - **M-6** Tras 30 min con el móvil quieto y bloqueado (Doze), un descanso de 60 s suena. **Resultado: OK** (alarma de prueba a 30 min con el móvil desconectado del cable, a la hora esperada, sin ajustes de batería).
@@ -103,7 +103,8 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 - [x] Tests (rojos primero): CA-1…CA-10f, CA-13, CA-14 de la Fase 0 y, de la Fase 1, CA-3…CA-9, CA-12 y CA-15 (más CA-5b y CA-8b, añadidos al implementar). Pendiente de la Fase 2: CA-11 (exportar/compartir nativo).
 - [x] Capa de plataforma y alarma nativa integrada en `syncRest`/`tick`/`askNotify`/`closeRestNote` (app v11, 176 tests).
 - [x] `scripts/sync-www.mjs`.
-- [ ] Probar en el móvil con el descanso real de una sesión (M-2, M-3).
+- [x] Probar en el móvil con el descanso real de una sesión (v11, 2026-11-16): pantalla encendida (una sola alarma), bloqueada (notificación del sistema y refuerzos a +10 s y +20 s), desbloquear (desaparece y no vuelve a sonar), vibración con auriculares Bluetooth (suena), +15 s (llega 15 s más tarde) y Saltar (no suena nada). **Todo OK.** M-2 (tres descansos seguidos) quedó cubierto de forma informal por varias pruebas encadenadas.
+  - Observación: con los auriculares, esta vez el sonido salió solo por el altavoz del móvil; en la prueba de la v10 salió por ambos. No se pudo comprobar si los auriculares estaban activos (Android los mostraba solo emparejados). Cumple lo decidido («en el auricular o en el celular»); se vuelve a mirar si se repite con los auriculares activos.
 
 **Notas de implementación (Fase 1):**
 - Con el descanso ya sonado y los avisos activados, `syncRest` **no cancela** las alarmas: los refuerzos (+10 s, +20 s) se quedan hasta que el usuario atiende (al volver a visible se cancelan y se retiran las entregadas). Cancelar al sonar habría eliminado los refuerzos justo cuando hacen falta.
