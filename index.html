@@ -206,7 +206,7 @@ input.big{font-size:32px;font-weight:700;text-align:center;min-height:64px}
 'use strict';
 /* ============ utilidades ============ */
 const KEY = 'gymlog.v1';
-const APP_VERSION = 11; // mantener igual que CACHE en sw.js ('gymlog-v11')
+const APP_VERSION = 12; // mantener igual que CACHE en sw.js ('gymlog-v12')
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -232,7 +232,8 @@ const firstNum = s => { const m = String(s || '').match(/\d+(?:[.,]\d+)?/); retu
 // y la app se comporta como siempre (service worker, Notification API).
 const NATIVE = !!(window.Capacitor && typeof Capacitor.isNativePlatform === 'function' && Capacitor.isNativePlatform());
 const nativePlugin = name => (NATIVE ? (Capacitor.Plugins && Capacitor.Plugins[name]) || (typeof Capacitor.registerPlugin === 'function' ? Capacitor.registerPlugin(name) : null) : null);
-const LN = nativePlugin('LocalNotifications');
+const LN = nativePlugin('LocalNotifications'), FS = nativePlugin('Filesystem'), SHARE = nativePlugin('Share');
+let nativePerm = null;   // último estado conocido del permiso de notificaciones: 'granted' | 'denied' | 'prompt'
 const TEST_ALARM_ID = 9001, TEST_TIMES = [[15, '15 s'], [60, '1 min'], [300, '5 min'], [1800, '30 min']];
 let nativeTestSecs = 15;
 // Permiso de notificaciones del sistema ('granted' | 'denied' | 'prompt'); con ask = true lo pide si falta
@@ -240,8 +241,29 @@ async function nativePermission(ask) {
   try {
     let p = (await LN.checkPermissions()).display;
     if (p !== 'granted' && ask) p = (await LN.requestPermissions()).display;
+    nativePerm = p;
     return p;
   } catch (e) { return 'denied'; }
+}
+// Actualiza el estado del permiso (el usuario puede cambiarlo en los ajustes del móvil) y repinta Ajustes si cambió
+async function nativeRefreshPerm() {
+  if (!LN) return;
+  const before = nativePerm;
+  await nativePermission(false);
+  if (nativePerm !== before && view === 'settings') render();
+}
+const nativePermText = () => nativePerm === 'granted' ? '✅ Notificaciones permitidas.'
+  : nativePerm === 'denied' ? '⚠️ Notificaciones bloqueadas: actívalas en los ajustes del móvil (Aplicaciones → GymLog → Notificaciones).'
+  : nativePerm === 'prompt' ? 'Se pedirá permiso al empezar una sesión.' : 'Comprobando el permiso de notificaciones…';
+// Respaldo en Android: el <a download> no sirve en el WebView; se escribe el JSON en la caché y se abre el menú de compartir
+// (Drive, Archivos, WhatsApp…). Solo se anota el respaldo si el usuario completa el envío.
+async function nativeExport() {
+  let uri;
+  try { uri = (await FS.writeFile({ path: backupName(), data: backupText(), directory: 'CACHE', encoding: 'utf8' })).uri; }
+  catch (e) { toast('⚠️ No se pudo exportar el respaldo'); return; }
+  try { await SHARE.share({ title: 'Respaldo GymLog', files: [uri] }); }
+  catch (e) { if (/cancel/i.test(String((e && e.message) || e))) return; toast('⚠️ No se pudo compartir el respaldo'); return; }
+  S.lastExport = Date.now(); save(); render(); toast('Respaldo listo ✅');
 }
 // Canal de los avisos de descanso según los interruptores de sonido y vibración. Los cuatro canales (descanso-sv, -s, -v, -n)
 // los crea el código nativo (MainActivity.java) con USAGE_ALARM: suenan aunque el móvil esté en vibración, por altavoz y auriculares.
@@ -866,7 +888,7 @@ async function requestWake() {
   try { wl = await navigator.wakeLock.request('screen'); wl.addEventListener('release', () => { wl = null; }); } catch (e) { wl = null; }
 }
 function releaseWake() { if (wl) { wl.release().catch(() => {}); wl = null; } }
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); silence(); closeRestNote(); tick(); } });
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') { requestWake(); silence(); closeRestNote(); tick(); if (NATIVE) nativeRefreshPerm(); } });
 // Cualquier toque en la pantalla silencia la alarma (fase de captura: antes que cualquier otra acción)
 document.addEventListener('pointerdown', silence, true);
 
@@ -1404,6 +1426,9 @@ function renderSettings() {
       : Notification.permission === 'denied' ? '⚠️ Notificaciones bloqueadas: actívalas en los ajustes del navegador para esta web.'
       : 'Se pedirá permiso al empezar una sesión.'}</p>` : ''}
     <button class="wide mt" data-a="testAlarm">🔔 Probar alarma</button>
+    ${NATIVE && st.notify ? `<p class="muted small">${nativePermText()}</p>` : ''}
+    ${NATIVE ? `<details id="batHelp" class="muted small mt"><summary>Si la alarma no suena con la pantalla bloqueada</summary>
+      <p>Algunos fabricantes (Honor, Xiaomi, Huawei…) cierran las apps en segundo plano para ahorrar batería y pueden retrasar o cancelar la alarma. Si te pasa, en los ajustes del móvil busca <b>Batería</b> → <b>Inicio de aplicaciones</b> (o «Optimización de batería» / «Uso de batería de la app»), elige GymLog y permite la actividad en segundo plano o ponla sin restricciones.</p></details>` : ''}
     ${NATIVE ? `<div class="seg mt">${TEST_TIMES.map(([v, l]) => `<button data-a="testSecs" data-v="${v}" class="${v === nativeTestSecs ? 'on' : ''}">${l}</button>`).join('')}</div>
     <button class="wide mt" data-a="nativeTest">⏱ Probar alarma (${TEST_TIMES.find(t => t[0] === nativeTestSecs)[1]})</button>
     <p class="muted small">Pulsa y bloquea la pantalla: pasado el tiempo elegido debe sonar y vibrar, aunque el móvil esté en vibración. Los tiempos largos sirven para comprobar el ahorro de batería. Si no suena, revisa los permisos de batería de GymLog en los ajustes del móvil.</p>` : ''}
@@ -1420,15 +1445,15 @@ function renderSettings() {
     <button class="wide btn-ghost mt" data-a="credits">Créditos y licencias</button>
     <p class="muted small mt" style="text-align:center">GymLog v${APP_VERSION} · todo se guarda solo en este dispositivo</p></main>`;
 }
-function backupBlob() {
-  const data = JSON.stringify({ app: 'gymlog', exportedAt: new Date().toISOString(), ...S }, null, 1);
-  return new Blob([data], { type: 'application/json' });
-}
+const backupText = () => JSON.stringify({ app: 'gymlog', exportedAt: new Date().toISOString(), ...S }, null, 1);
+function backupBlob() { return new Blob([backupText()], { type: 'application/json' }); }
 const backupName = () => { const d = new Date(); return `gymlog-respaldo-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}.json`; };
 function canShareFiles() {
+  if (NATIVE) return false;   // en Android el único botón es Exportar (abre el menú de compartir)
   try { return !!(navigator.canShare && navigator.canShare({ files: [new File(['{}'], 'x.json', { type: 'application/json' })] })); } catch (e) { return false; }
 }
 function doExport() {
+  if (NATIVE) return nativeExport();
   const url = URL.createObjectURL(backupBlob());
   const a = document.createElement('a');
   a.href = url; a.download = backupName();
@@ -1545,7 +1570,7 @@ const move = (arr, i, d) => { const j = i + d; if (j < 0 || j >= arr.length) ret
 
 /* ============ acciones ============ */
 const ACT = {
-  go: d => { if (d.v !== view && d.v !== 'train' && view === 'train') history.pushState({ tab: 1 }, ''); view = d.v; render(); scrollTo(0, 0); },
+  go: d => { if (d.v !== view && d.v !== 'train' && view === 'train') history.pushState({ tab: 1 }, ''); view = d.v; render(); scrollTo(0, 0); if (NATIVE && d.v === 'settings') nativeRefreshPerm(); },
   start: d => startSession(d.id),
   selEx: d => {
     const A = S.active, e = +d.e, ex = A.exercises[e];
@@ -1704,6 +1729,7 @@ document.addEventListener('contextmenu', e => { if (e.target.closest('[data-step
 render();
 askPersist().then(() => { if (view === 'settings') render(); });
 if (S.active) { requestWake(); syncRest(); }
+if (NATIVE) nativeRefreshPerm();
 if (!NATIVE && 'serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
 </script>
 </body>

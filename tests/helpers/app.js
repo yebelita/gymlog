@@ -44,7 +44,7 @@ function makeClock(start) {
  * @param {'granted'|'denied'|'default'} [o.permission='granted']
  * @param {boolean} [o.grantOnRequest=true]  respuesta a Notification.requestPermission()
  * @param {boolean} [o.notifications=true]   false = navegador sin API de notificaciones
- * @param {boolean|{permission?: string, grantOnRequest?: boolean}} [o.native]  simula el APK de Capacitor (window.Capacitor con plugins falsos);
+ * @param {boolean|{permission?: string, grantOnRequest?: boolean, shareError?: string, writeError?: string}} [o.native]  simula el APK de Capacitor (window.Capacitor con plugins falsos);
  *        env.native.calls registra cada llamada a los plugins y env.native.perm el permiso de notificaciones ('granted'|'denied'|'prompt')
  */
 async function loadApp(o = {}) {
@@ -52,7 +52,7 @@ async function loadApp(o = {}) {
   const env = {
     clock, visibility: 'visible',
     permission: o.permission || 'granted', grantOnRequest: o.grantOnRequest !== false, permRequests: 0,
-    notes: [], vibrations: [], oscillators: [], audios: [], errors: [], swRegs: 0, native: null
+    notes: [], vibrations: [], oscillators: [], audios: [], errors: [], swRegs: 0, native: null, objectUrls: 0
   };
 
   const vc = new VirtualConsole();
@@ -91,7 +91,7 @@ async function loadApp(o = {}) {
       win.Audio = class { constructor(src) { this.src = src; this.paused = true; this.loop = false; env.audios.push(this); }
         play() { this.paused = false; return Promise.resolve(); } pause() { this.paused = true; } };
       win.MediaMetadata = class { constructor(m) { Object.assign(this, m); } };
-      win.URL.createObjectURL = () => 'blob:http://localhost/fake';
+      win.URL.createObjectURL = () => { env.objectUrls++; return 'blob:http://localhost/fake'; };
       win.URL.revokeObjectURL = () => {};
 
       // dispositivo
@@ -105,7 +105,7 @@ async function loadApp(o = {}) {
       // Android nativo (Capacitor): el puente inyecta window.Capacitor; aquí se simulan los plugins que usa la app
       if (o.native) {
         const n = o.native === true ? {} : o.native;
-        const nat = env.native = { calls: [], perm: n.permission || 'granted', grantOnRequest: n.grantOnRequest !== false };
+        const nat = env.native = { calls: [], perm: n.permission || 'granted', grantOnRequest: n.grantOnRequest !== false, shareError: n.shareError || null, writeError: n.writeError || null };
         const rec = (fn, ret) => async args => { nat.calls.push({ fn, args }); return typeof ret === 'function' ? ret(args) : ret; };
         const LocalNotifications = {
           checkPermissions: async () => ({ display: nat.perm }),
@@ -113,7 +113,10 @@ async function loadApp(o = {}) {
           createChannel: rec('createChannel'), schedule: rec('schedule', { notifications: [] }), cancel: rec('cancel'),
           removeAllDeliveredNotifications: rec('removeAllDeliveredNotifications'), getPending: rec('getPending', { notifications: [] })
         };
-        win.Capacitor = { isNativePlatform: () => true, getPlatform: () => 'android', Plugins: { LocalNotifications } };
+        const Filesystem = { writeFile: async args => { nat.calls.push({ fn: 'writeFile', args }); if (nat.writeError) throw new Error(nat.writeError); return { uri: 'file:///cache/' + args.path }; } };
+        const Share = { share: async args => { nat.calls.push({ fn: 'share', args }); if (nat.shareError) throw new Error(nat.shareError); return { activityType: 'fake' }; },
+          canShare: async () => ({ value: true }) };
+        win.Capacitor = { isNativePlatform: () => true, getPlatform: () => 'android', Plugins: { LocalNotifications, Filesystem, Share } };
       }
 
       // notificaciones + service worker

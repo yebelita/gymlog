@@ -4,3 +4,8 @@ node_modules/
 
 # APK de Android: www/ se genera con scripts/sync-www.mjs
 www/
+
+# Clave de firma del APK: nunca se versiona (ver docs/ANDROID.md)
+keystore.properties
+*.jks
+*.keystore

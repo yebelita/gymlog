@@ -318,3 +318,88 @@ test('CA-12: en la web no hay llamadas nativas y los avisos del navegador funcio
   assert.ok(app.env.notes.length >= 1, 'y avisa con la notificación del navegador');
   app.close();
 });
+
+/* ---------- Fase 2: respaldo nativo, estado en Ajustes, icono, firma y documentación ---------- */
+
+test('CA-11: en nativo Exportar escribe el JSON con Filesystem y abre el menú de compartir; no usa <a download>', async () => {
+  const app = await loadApp({ native: true });
+  await openSettings(app);
+  assert.equal(app.$('[data-a="share"]'), null, 'sin el botón de compartir aparte (CA-11c)');
+  app.click('[data-a="export"]'); await app.flush();
+  const w = callsOf(app, 'writeFile'), sh = callsOf(app, 'share');
+  assert.equal(w.length, 1);
+  assert.match(w[0].args.path, /^gymlog-respaldo-\d{4}-\d{2}-\d{2}\.json$/);
+  assert.equal(w[0].args.directory, 'CACHE');
+  assert.equal(w[0].args.encoding, 'utf8');
+  const d = JSON.parse(w[0].args.data);
+  assert.equal(d.app, 'gymlog'); assert.ok(Array.isArray(d.routine) && Array.isArray(d.sessions) && Array.isArray(d.measures));
+  assert.equal(sh.length, 1);
+  assert.deepEqual([...sh[0].args.files], ['file:///cache/' + w[0].args.path]);
+  assert.equal(app.S.lastExport, app.clock.now, 'se anota el último respaldo');
+  assert.equal(app.env.objectUrls, 0, 'no se crea ningún enlace de descarga');
+  assert.equal(app.$('a[download]'), null);
+  app.close();
+});
+
+test('CA-11b: si se cancela el menú de compartir no hay error ni se anota el respaldo; si falla la escritura se avisa', async () => {
+  let app = await loadApp({ native: { shareError: 'Share canceled' } });
+  await openSettings(app);
+  app.click('[data-a="export"]'); await app.flush();
+  assert.equal(callsOf(app, 'share').length, 1);
+  assert.equal(app.S.lastExport, 0);
+  assert.doesNotMatch(app.text('#toast'), /No se pudo/);
+  app.close();
+
+  app = await loadApp({ native: { writeError: 'disco lleno' } });
+  await openSettings(app);
+  app.click('[data-a="export"]'); await app.flush();
+  assert.equal(callsOf(app, 'share').length, 0, 'sin escritura no se abre el menú');
+  assert.equal(app.S.lastExport, 0);
+  assert.match(app.text('#toast'), /No se pudo exportar/);
+  app.close();
+});
+
+test('CA-18: en nativo Ajustes muestra el estado del permiso de notificaciones, se refresca al volver y hay ayuda de batería', async () => {
+  let app = await loadApp({ native: { permission: 'granted' } });
+  await openSettings(app);
+  assert.match(app.text('#app'), /Notificaciones permitidas/);
+  assert.ok(app.$('#batHelp'));
+  assert.match(app.text('#batHelp'), /Batería/);
+  app.native.perm = 'denied';                       // el usuario las bloquea en los ajustes del móvil
+  await app.setVisibility('hidden'); await app.setVisibility('visible');
+  assert.match(app.text('#app'), /bloqueadas/);
+  assert.match(app.text('#app'), /ajustes del móvil/);
+  app.close();
+
+  app = await loadApp({ native: { permission: 'prompt' } });
+  await openSettings(app);
+  assert.match(app.text('#app'), /Se pedirá permiso/);
+  app.close();
+
+  app = await loadApp();
+  await openSettings(app);
+  assert.equal(app.$('#batHelp'), null, 'en la web no hay ayuda de batería');
+  app.close();
+});
+
+test('CA-17: la app se llama GymLog y el fondo del icono adaptativo es #0f1115', () => {
+  const res = path.join(ROOT, 'android', 'app', 'src', 'main', 'res', 'values');
+  assert.match(fs.readFileSync(path.join(res, 'strings.xml'), 'utf8'), /<string name="app_name">GymLog<\/string>/);
+  assert.match(fs.readFileSync(path.join(res, 'ic_launcher_background.xml'), 'utf8'), /#0f1115/i);
+});
+
+test('CA-16: la firma release lee keystore.properties; ni este archivo ni las claves se versionan; la compilación debug no depende de ellos', () => {
+  const g = fs.readFileSync(path.join(ROOT, 'android', 'app', 'build.gradle'), 'utf8');
+  assert.match(g, /keystore\.properties/);
+  assert.match(g, /signingConfigs\s*\{[\s\S]*release/);
+  assert.match(g, /keystorePropertiesFile\.exists\(\)/, 'solo firma si el archivo existe');
+  const gi = fs.readFileSync(path.join(ROOT, '.gitignore'), 'utf8');
+  assert.match(gi, /^keystore\.properties$/m);
+  assert.match(gi, /^\*\.jks$/m);
+  assert.ok(!fs.existsSync(path.join(ROOT, 'android', 'keystore.properties')) || /keystore\.properties/.test(gi));
+});
+
+test('CA-19: docs/ANDROID.md explica los requisitos, la compilación, la firma y la copia de la clave', () => {
+  const d = fs.readFileSync(path.join(ROOT, 'docs', 'ANDROID.md'), 'utf8');
+  for (const t of ['JDK 21', 'assembleRelease', 'keystore.properties', 'copia', 'adb install', 'sync-www']) assert.ok(d.includes(t), `falta «${t}»`);
+});

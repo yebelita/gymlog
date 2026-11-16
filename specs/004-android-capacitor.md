@@ -1,5 +1,5 @@
 # 004 · APK Android (Capacitor) con alarma de descanso nativa
-Estado: aprobada (2026-11-16); Fase 0 en curso
+Estado: Fases 0, 1 y 2 hechas y validadas en el móvil (2026-11-16); pendientes: copia de la clave por el usuario y merge a main
 Depende de: 003 (la app que se empaqueta)
 
 ## Objetivo
@@ -61,6 +61,21 @@ Solo en nativo, en Ajustes. Un selector de tiempo **15 s · 1 min · 5 min · 30
 - **Fase 1:** `sync-www`, `capacitor.config.json`, capa de plataforma y alarma nativa con tests.
 - **Fase 2:** permisos y Ajustes, exportar/compartir, icono y nombre, `docs/ANDROID.md`.
 
+### 8. Fase 2 en detalle (2026-11-16)
+**Orden:** primero el **respaldo** (para que el usuario pueda guardar lo que tenga en el APK) y después la **firma**, porque cambiar la clave obliga a desinstalar la app instalada y se pierden sus datos locales.
+
+**A. Exportar respaldo en nativo.** El `<a download>` y `navigator.share` no sirven en el WebView. En nativo, `Exportar` escribe el JSON con `Filesystem.writeFile({ path: backupName(), data, directory: 'CACHE', encoding: 'utf8' })` y abre el menú de compartir de Android con `Share.share({ title, files: [uri] })` (desde ahí se guarda en Drive, Archivos, WhatsApp…). Solo se actualiza `S.lastExport` si el usuario completa el envío; si cancela no se muestra error; si falla la escritura se avisa. En nativo hay **un solo botón** («Exportar respaldo») y no el de «Compartir respaldo». Importar sigue usando el selector de archivos.
+
+**B. Ajustes en nativo.** Estado del permiso de notificaciones (✅ permitidas / ⚠️ bloqueadas con cómo activarlas / se pedirá al empezar), que se refresca al entrar en Ajustes y al volver a la app, y una ayuda plegable sobre el **ahorro de batería** del fabricante. No hace falta pantalla de alarmas exactas (`USE_EXACT_ALARM`).
+
+**C. Icono y nombre.** Nombre `GymLog`; iconos del launcher (normal, redondo y adaptativo) generados desde `icon-512.png` / `icon-maskable-512.png` con fondo `#0f1115`, y pantalla de arranque oscura con el icono, en lugar de los genéricos de Capacitor.
+
+**D. Firma propia.** Clave `gymlog-release.jks` **fuera del repositorio** (`%USERPROFILE%\.gymlog\`) y `android/keystore.properties` (ignorado por git) con ruta, alias y contraseñas; `app/build.gradle` define `signingConfigs.release` leyendo ese archivo, y `gradlew assembleRelease` produce `app-release.apk` firmado (sin `debuggable`). Si falta `keystore.properties`, la compilación de depuración sigue funcionando. La contraseña la genera la herramienta y **no se muestra en el chat ni se versiona**; el usuario debe hacer copia del `.jks` y del `keystore.properties`. Perder la clave implica reinstalar y perder los datos locales (de ahí el respaldo).
+
+**E. Documentación.** `docs/ANDROID.md`: requisitos (Android Studio, **JDK 21**), comandos de compilación, instalación con `adb`, firma y copia de la clave, y la ayuda de batería.
+
+**F. Cierre.** Mergear la rama `android-capacitor` a `main`.
+
 ## Criterios de aceptación
 Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulados). Los **M** son pruebas manuales en el móvil.
 
@@ -79,6 +94,12 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 - **CA-15** En nativo, con la página oculta no suena la alarma de la app (solo la notificación); con la página visible suena la de la app y se cancelan las pendientes.
 - **CA-11** Exportar y compartir en nativo usan `Filesystem` + `Share` y no `<a download>`.
 - **CA-12** En web, `askNotify`, `notifyRest` y `closeRestNote` siguen funcionando como hoy.
+- **CA-11b** Si el usuario cancela el menú de compartir no se muestra error ni se actualiza `lastExport`; si falla la escritura se avisa con un mensaje.
+- **CA-11c** En nativo Ajustes muestra un solo botón «Exportar respaldo» (sin «Compartir respaldo»).
+- **CA-16** `app/build.gradle` define `signingConfigs.release` leyendo `keystore.properties`; `keystore.properties` y `*.jks` están en `.gitignore`; la compilación de depuración no depende de ese archivo.
+- **CA-17** El nombre de la app es `GymLog` y el fondo del icono adaptativo es `#0f1115`.
+- **CA-18** En nativo Ajustes muestra el estado del permiso de notificaciones (permitido, bloqueado con instrucciones, o se pedirá) y una ayuda plegable de batería; se refresca al volver a la app.
+- **CA-19** `docs/ANDROID.md` existe y menciona JDK 21, `assembleRelease`, `keystore.properties` y la copia de la clave.
 - **CA-13** `scripts/sync-www.mjs` copia exactamente los archivos de la app a `www/` y no copia `sw.js`, `tests/`, `specs/`, `scripts/` ni `node_modules/`.
 - **CA-14** `capacitor.config.json` y `AndroidManifest.xml` declaran el `appId`, `webDir` y los permisos acordados.
 - **M-1** Con la pantalla bloqueada, la notificación suena y vibra a la hora del descanso (15 s, 1 min y 5 min). **Resultado: OK a 15 s, 1 min y 5 min.**
@@ -112,9 +133,17 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 - Se cancela por precaución en cada `syncRest` sin descanso (limpia alarmas viejas, p. ej. tras borrar datos); los tests cuentan solo las cancelaciones posteriores al inicio del descanso.
 - Dos mutaciones confirmaron que los tests detectan fallos: quitar la cancelación a 2 s (rompe CA-5 y CA-5b) y dejar que la app suene con la pantalla bloqueada (rompe CA-6/CA-15).
 ### Fase 2
-- [ ] Permisos, estado en Ajustes y ayuda de batería.
-- [ ] Exportar/compartir nativo.
-- [ ] Icono, nombre, `docs/ANDROID.md`; subir `CACHE`/`APP_VERSION`.
+- [x] Permisos, estado en Ajustes y ayuda de batería (CA-18).
+- [x] Exportar/compartir nativo (CA-11, CA-11b, CA-11c).
+- [x] Icono (mancuerna verde, normal/redondo/adaptativo), pantalla de arranque oscura, nombre, `docs/ANDROID.md` (CA-17, CA-19); app v12.
+- [x] **Firma propia** (CA-16): clave `%USERPROFILE%\.gymlog\gymlog-release.jks` (RSA 2048, válida hasta 2054, huella SHA-256 `4F:AB:44:6F:…:A8:4B:4D`) y `android/keystore.properties` (ignorado por git); `assembleRelease` produce `app-release.apk` (3,2 MB), verificado con `apksigner` (esquema v2, certificado `CN=GymLog`) e instalado en el Honor.
+- [ ] **El usuario debe copiar `gymlog-release.jks` y `keystore.properties` fuera del PC** (sin ellos no se puede actualizar la app).
+- [ ] Mergear la rama `android-capacitor` a `main`.
+
+**Notas de la Fase 2:**
+- Para pasar de la compilación de depuración a la firmada hubo que **desinstalar** la app (otra clave): se perdieron los datos de prueba del APK, como estaba acordado.
+- El primer intento de crear la clave falló sin avisar (esta versión de PowerShell no tiene `RandomNumberGenerator.GetInt32`, la contraseña salió vacía y el script dijo «creada»). Se descartó esa clave (sin APK firmado con ella) y se rehizo comprobando cada paso: ahora se verifica que la contraseña abre el almacén **antes** de escribir `keystore.properties`.
+- Pendientes cosméticos: la barra de estado y la de navegación del sistema son blancas con la app oscura; `versionCode`/`versionName` siguen en 1/«1.0» (conviene subirlos al repartir actualizaciones por archivo).
 
 ## Decisiones (2026-11-15)
 1. **`appId`: `com.yebelita.gymlog`.** No es un dominio de pago: es solo un identificador único con formato de dominio invertido. **No se puede cambiar después** sin que Android lo trate como otra app.
