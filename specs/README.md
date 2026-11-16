@@ -31,6 +31,6 @@ Depende de: NNN
 | [001](001-progreso-pestanas.md) | Progreso con pestañas internas (refactor sin funciones nuevas) | hecha (v4) |
 | [002](002-medidas.md) | Registro de medidas corporales con cinta | hecha (v5) |
 | [003](003-mapa-calor.md) | Mapa de calor muscular (hombre/mujer) + catálogo de ejercicios | hecha (v8) |
-| [004](004-android-capacitor.md) | APK Android con Capacitor + notificaciones programadas | hecha (v12); pendiente copia de la clave y merge |
+| [004](004-android-capacitor.md) | APK Android con Capacitor + notificaciones programadas | hecha (v12); pendiente la copia de la clave |
 
 Orden acordado: 001 → 002 → 003 → 004. 

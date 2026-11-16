@@ -1,5 +1,5 @@
 # 004 · APK Android (Capacitor) con alarma de descanso nativa
-Estado: Fases 0, 1 y 2 hechas y validadas en el móvil (2026-11-16); pendientes: copia de la clave por el usuario y merge a main
+Estado: Fases 0, 1 y 2 hechas y validadas en el móvil (2026-11-16); pendiente: copia de la clave por el usuario
 Depende de: 003 (la app que se empaqueta)
 
 ## Objetivo
@@ -138,7 +138,7 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 - [x] Icono (mancuerna verde, normal/redondo/adaptativo), pantalla de arranque oscura, nombre, `docs/ANDROID.md` (CA-17, CA-19); app v12.
 - [x] **Firma propia** (CA-16): clave `%USERPROFILE%\.gymlog\gymlog-release.jks` (RSA 2048, válida hasta 2054, huella SHA-256 `4F:AB:44:6F:…:A8:4B:4D`) y `android/keystore.properties` (ignorado por git); `assembleRelease` produce `app-release.apk` (3,2 MB), verificado con `apksigner` (esquema v2, certificado `CN=GymLog`) e instalado en el Honor.
 - [ ] **El usuario debe copiar `gymlog-release.jks` y `keystore.properties` fuera del PC** (sin ellos no se puede actualizar la app).
-- [ ] Mergear la rama `android-capacitor` a `main`.
+- [x] Mergear la rama `android-capacitor` a `main` (hecho 2026-11-16, avance rápido; `main` queda 6 commits por delante de `origin/main`, sin push).
 
 **Notas de la Fase 2:**
 - Para pasar de la compilación de depuración a la firmada hubo que **desinstalar** la app (otra clave): se perdieron los datos de prueba del APK, como estaba acordado.
