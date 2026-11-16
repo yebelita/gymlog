@@ -206,7 +206,7 @@ input.big{font-size:32px;font-weight:700;text-align:center;min-height:64px}
 'use strict';
 /* ============ utilidades ============ */
 const KEY = 'gymlog.v1';
-const APP_VERSION = 10; // mantener igual que CACHE en sw.js ('gymlog-v10')
+const APP_VERSION = 11; // mantener igual que CACHE en sw.js ('gymlog-v11')
 const $ = s => document.querySelector(s);
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -739,12 +739,47 @@ function silence() { if (!ringing()) return; stopRing(); syncRest(); }
    mantiene viva la página y, al terminar, se lanza una notificación del sistema (que sí vibra). */
 let restTO = null, keep = null;
 const canNotify = () => 'Notification' in window && 'serviceWorker' in navigator;
-const notifyOn = () => S.settings.notify && canNotify() && Notification.permission === 'granted';
+const notifyOn = () => !NATIVE && S.settings.notify && canNotify() && Notification.permission === 'granted';
 async function askNotify() {
+  if (NATIVE) {   // Android: permiso de notificaciones del sistema; al concederlo se programa el descanso en curso
+    if (!S.settings.notify || !LN) return;
+    await nativePermission(true);
+    syncRest();
+    if (view === 'settings') render();
+    return;
+  }
   if (!S.settings.notify || !canNotify() || Notification.permission !== 'default') return;
   try { await Notification.requestPermission(); } catch (e) {}
   syncRest();
   if (view === 'settings') render();
+}
+/* Avisos nativos (Android). Al empezar o cambiar un descanso se programan tres notificaciones con ids fijos —al terminar y,
+   como refuerzo, a +10 s y +20 s (RENOTIFY_AT)— que el sistema dispara aunque la app esté cerrada o el móvil bloqueado.
+   Se reprograma siempre con las mismas ids, así que sumar o restar tiempo no deja alarmas viejas. El sistema muestra la
+   notificación aunque la app esté a la vista; para no duplicar la alarma de la app, 2 s antes del final, si la página sigue
+   visible, se cancelan (con la pantalla bloqueada ese código no se ejecuta y se quedan). */
+const REST_IDS = [1001, 1002, 1003];
+let restSched = false, restSeq = 0;   // ¿hay alarmas programadas?; contador para ignorar programaciones ya obsoletas
+async function nativeScheduleRest(T) {
+  const seq = ++restSeq;
+  if (!NATIVE || !LN || !S.settings.notify || await nativePermission(false) !== 'granted' || seq !== restSeq) return;
+  const channelId = restChannel();
+  try {
+    await LN.schedule({ notifications: [0, ...RENOTIFY_AT].map((d, i) => ({ id: REST_IDS[i], title: 'Descanso terminado', body: '¡A por la siguiente serie! 💪', channelId,
+      schedule: { at: new Date(T.end + d), allowWhileIdle: true }, isExactNotification: true })) });
+    if (seq === restSeq) restSched = true;
+  } catch (e) {}
+}
+function nativeCancelRest() {
+  restSeq++; restSched = false;
+  if (LN) LN.cancel({ notifications: REST_IDS.map(id => ({ id })) }).catch(() => {});
+}
+// Al volver a la app: se retiran las notificaciones entregadas y, si el descanso ya sonó (o ya no hay), los refuerzos pendientes
+function nativeClearDelivered() {
+  if (!LN) return;
+  const T = S.active && S.active.timer;
+  if (!T || T.fired) nativeCancelRest();
+  LN.removeAllDeliveredNotifications().catch(() => {});
 }
 function keepAlive(on) {
   if (!on) { if (keep) keep.pause(); return; }
@@ -769,6 +804,11 @@ function syncRest() {
   const T = S.active && S.active.timer;
   if (!T || !T.fired) stopRing();
   if (T && !T.fired) restTO = setTimeout(tick, Math.max(0, T.end - Date.now()) + 50);
+  if (NATIVE) {   // Android: avisan las alarmas del sistema (sin el audio inaudible). Con el descanso ya sonado se dejan los refuerzos hasta que el usuario atienda
+    if (!T || !S.settings.notify) nativeCancelRest();
+    else if (!T.fired) nativeScheduleRest(T);
+    return;
+  }
   keepAlive(!!T && (!T.fired || ringing()) && notifyOn());
 }
 async function notifyRest() {
@@ -780,6 +820,7 @@ async function notifyRest() {
   } catch (e) {}
 }
 function closeRestNote() {
+  if (NATIVE) { nativeClearDelivered(); return; }
   if (!canNotify() || !navigator.serviceWorker.controller) return;
   navigator.serviceWorker.ready.then(r => r.getNotifications({ tag: 'gymlog-rest' })).then(ns => ns.forEach(n => n.close())).catch(() => {});
 }
@@ -789,11 +830,13 @@ function tick() {
   const el = $('#elapsed'); if (el) el.textContent = fmtElapsed(Date.now() - A.start);
   const T = A.timer; if (!T) return;
   const left = (T.end - Date.now()) / 1000;
+  if (NATIVE && restSched && !T.fired && left <= 2 && document.visibilityState === 'visible') nativeCancelRest();
   if (left <= 0 && !T.fired) {
     T.fired = true; T.firedAt = Date.now(); save();
-    // Si la página estuvo congelada y se entera tarde al desbloquear, el usuario ya está mirando: no suena
+    // Si la página estuvo congelada y se entera tarde al desbloquear, el usuario ya está mirando: no suena.
+    // En Android, con la pantalla bloqueada avisa la notificación del sistema y la alarma de la app no suena (no se duplican)
     const hidden = document.visibilityState === 'hidden';
-    if (hidden || -left < 5) startRing(hidden);
+    if (NATIVE ? (!hidden && -left < 5) : (hidden || -left < 5)) startRing(hidden);
     syncRest();
   }
   else if (T.fired && !ringing() && Date.now() - T.firedAt > 6000) { A.timer = null; save(); }

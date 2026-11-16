@@ -81,13 +81,13 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 - **CA-12** En web, `askNotify`, `notifyRest` y `closeRestNote` siguen funcionando como hoy.
 - **CA-13** `scripts/sync-www.mjs` copia exactamente los archivos de la app a `www/` y no copia `sw.js`, `tests/`, `specs/`, `scripts/` ni `node_modules/`.
 - **CA-14** `capacitor.config.json` y `AndroidManifest.xml` declaran el `appId`, `webDir` y los permisos acordados.
-- **M-1** Con la pantalla bloqueada, la notificación suena y vibra a la hora del descanso (15 s, 1 min y 5 min). **Resultado: OK a 15 s y 60 s**; faltan 5 min.
+- **M-1** Con la pantalla bloqueada, la notificación suena y vibra a la hora del descanso (15 s, 1 min y 5 min). **Resultado: OK a 15 s, 1 min y 5 min.**
 - **M-7** Con auriculares Bluetooth conectados y el móvil en modo **vibración**, la notificación suena (por los auriculares y el altavoz) y vibra. **Resultado: OK.**
 - **M-2** Tres descansos seguidos de 90 s con pantalla bloqueada: suenan los tres.
 - **M-3** Con la app a la vista, al acabar el descanso solo suena la alarma de la app (sin notificación duplicada).
 - **M-4** Con ahorro de batería activado, sigue sonando (o se documenta cómo excluir la app).
 - **M-5** Exportar respaldo desde la app y volver a importarlo en la misma app.
-- **M-6** Tras 30 min con el móvil quieto y bloqueado (Doze), un descanso de 60 s suena.
+- **M-6** Tras 30 min con el móvil quieto y bloqueado (Doze), un descanso de 60 s suena. **Resultado: OK** (alarma de prueba a 30 min con el móvil desconectado del cable, a la hora esperada, sin ajustes de batería).
 
 ## Tareas
 ### Fase 0
@@ -100,9 +100,16 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
 - [ ] En el móvil, ajustar la batería para la app (en MagicOS: inicio manual / permitir actividad en segundo plano) **después** de la primera prueba, para comparar con y sin ajuste (M-4).
 - [ ] Probar M-1, M-2 y M-6 en el móvil; anotar resultados en esta spec.
 ### Fase 1
-- [ ] Tests CA-1…CA-14 (rojos primero).
-- [ ] Capa de plataforma y alarma nativa.
-- [ ] `scripts/sync-www.mjs`.
+- [x] Tests (rojos primero): CA-1…CA-10f, CA-13, CA-14 de la Fase 0 y, de la Fase 1, CA-3…CA-9, CA-12 y CA-15 (más CA-5b y CA-8b, añadidos al implementar). Pendiente de la Fase 2: CA-11 (exportar/compartir nativo).
+- [x] Capa de plataforma y alarma nativa integrada en `syncRest`/`tick`/`askNotify`/`closeRestNote` (app v11, 176 tests).
+- [x] `scripts/sync-www.mjs`.
+- [ ] Probar en el móvil con el descanso real de una sesión (M-2, M-3).
+
+**Notas de implementación (Fase 1):**
+- Con el descanso ya sonado y los avisos activados, `syncRest` **no cancela** las alarmas: los refuerzos (+10 s, +20 s) se quedan hasta que el usuario atiende (al volver a visible se cancelan y se retiran las entregadas). Cancelar al sonar habría eliminado los refuerzos justo cuando hacen falta.
+- Los avisos del navegador (`Notification`, service worker, audio inaudible) se desactivan en nativo (`notifyOn()` es falso).
+- Se cancela por precaución en cada `syncRest` sin descanso (limpia alarmas viejas, p. ej. tras borrar datos); los tests cuentan solo las cancelaciones posteriores al inicio del descanso.
+- Dos mutaciones confirmaron que los tests detectan fallos: quitar la cancelación a 2 s (rompe CA-5 y CA-5b) y dejar que la app suene con la pantalla bloqueada (rompe CA-6/CA-15).
 ### Fase 2
 - [ ] Permisos, estado en Ajustes y ayuda de batería.
 - [ ] Exportar/compartir nativo.
@@ -130,6 +137,7 @@ Los **CA** se prueban en jsdom con un `window.Capacitor` falso (plugins simulado
   - Sin auriculares: suena.
   - Interruptor «Sonido» desactivado: vibra sin sonar (canal `descanso-v`).
   - Con eso quedan validados M-1 y M-7 con el botón de prueba.
+- **Pruebas largas, 2026-11-16: OK.** Alarmas de 5 min y de 30 min (móvil quieto, bloqueado y sin cable) llegaron a la hora esperada **sin tocar los ajustes de batería de MagicOS**. Eso reduce mucho el riesgo principal de la spec (que el fabricante mate las alarmas) aunque no lo elimina: se repetirá con el descanso real y a lo largo de los días.
 - **Decidido:** el aviso debe sonar **aunque el móvil esté en vibración**, por los auriculares o por el altavoz (decisión 5 más abajo). Con una sesión real, la alarma web antigua también sonó en modo vibración, con la pantalla encendida y bloqueada: es la alarma web (volumen multimedia, que Android no silencia en vibración) y el WebView sigue ejecutándola con la pantalla bloqueada.
 
 ## Riesgos

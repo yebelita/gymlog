@@ -150,3 +150,171 @@ test('CA-14b: el .gitignore no versiona www/ y package.json lleva Capacitor solo
   for (const d of ['@capacitor/core', '@capacitor/cli', '@capacitor/android', '@capacitor/local-notifications', '@capacitor/app', '@capacitor/filesystem', '@capacitor/share'])
     assert.ok(pkg.devDependencies[d], d);
 });
+
+/* ---------- Fase 1: la alarma nativa integrada en el descanso real ---------- */
+
+const IDS = [1001, 1002, 1003];
+const restTimer = app => app.eval('S.active.timer && ({ end: S.active.timer.end, total: S.active.timer.total, fired: S.active.timer.fired })');
+const lastSchedule = app => callsOf(app, 'schedule').at(-1).args.notifications;
+const startRest = async app => { await app.start(0); await app.confirm(); await app.flush(); };
+const idsOf = c => (c.args.notifications || []).map(n => n.id).sort();
+
+test('CA-3: al empezar un descanso se programan 3 notificaciones con ids fijos: la principal al terminar y dos refuerzos a +10 s y +20 s', async () => {
+  const app = await loadApp({ native: true });
+  await startRest(app);
+  const T = restTimer(app), n = lastSchedule(app);
+  assert.deepEqual(n.map(x => x.id), IDS);
+  assert.deepEqual(n.map(x => x.schedule.at.getTime()), [T.end, T.end + 10000, T.end + 20000]);
+  for (const x of n) {
+    assert.equal(x.channelId, 'descanso-sv');
+    assert.equal(x.title, 'Descanso terminado');
+    assert.match(x.body, /siguiente serie/);
+    assert.equal(x.schedule.allowWhileIdle, true);
+    assert.equal(x.isExactNotification, true);
+  }
+  assert.equal(app.env.audios.length, 0, 'sin el audio inaudible del navegador (keepAlive)');
+  app.close();
+});
+
+test('CA-4: sumar o restar tiempo reprograma las mismas ids; saltar, terminar o desactivar avisos las cancelan', async () => {
+  const app = await loadApp({ native: true });
+  await startRest(app);
+  const end0 = restTimer(app).end;
+  app.click('[data-a="tadd"][data-v="15"]'); await app.flush();
+  assert.deepEqual(lastSchedule(app).map(x => x.id), IDS, 'mismas ids');
+  assert.equal(lastSchedule(app)[0].schedule.at.getTime(), end0 + 15000);
+  app.click('[data-a="tadd"][data-v="-15"]'); await app.flush();
+  assert.equal(lastSchedule(app)[0].schedule.at.getTime(), end0);
+
+  const antes = callsOf(app, 'cancel').length;
+  app.click('[data-a="tskip"]'); await app.flush();
+  const c = callsOf(app, 'cancel');
+  assert.equal(c.length, antes + 1, 'saltar cancela');
+  assert.deepEqual(idsOf(c.at(-1)), IDS);
+
+  await app.confirm(); await app.flush();   // otro descanso
+  const antes2 = callsOf(app, 'cancel').length;
+  app.eval('S.settings.notify = false; syncRest()'); await app.flush();
+  assert.equal(callsOf(app, 'cancel').length, antes2 + 1, 'desactivar los avisos cancela');
+  app.close();
+});
+
+test('CA-5: con la página visible, 2 s antes del final se cancelan las pendientes; con la página oculta no', async () => {
+  let app = await loadApp({ native: true });
+  await startRest(app);
+  const T = restTimer(app), base = callsOf(app, 'cancel').length;   // lo anterior al descanso no cuenta
+  await app.advance(T.end - app.clock.now - 3000);
+  assert.equal(callsOf(app, 'cancel').length, base, 'a 3 s del final aún no');
+  await app.advance(1500);
+  assert.equal(callsOf(app, 'cancel').length, base + 1, 'a menos de 2 s se cancelan');
+  assert.deepEqual(idsOf(callsOf(app, 'cancel').at(-1)), IDS);
+  await app.advance(500);
+  assert.equal(callsOf(app, 'cancel').length, base + 1, 'una sola vez');
+  app.close();
+
+  app = await loadApp({ native: true });
+  await startRest(app);
+  const base2 = callsOf(app, 'cancel').length;
+  await app.setVisibility('hidden');
+  await app.advance(restTimer(app).end - app.clock.now - 500);
+  assert.equal(callsOf(app, 'cancel').length, base2, 'con la pantalla bloqueada se quedan');
+  app.close();
+});
+
+test('CA-5b: si se suma tiempo después de cancelar, vuelven a programarse', async () => {
+  const app = await loadApp({ native: true });
+  await startRest(app);
+  const base = callsOf(app, 'cancel').length;
+  await app.advance(restTimer(app).end - app.clock.now - 1500);
+  assert.equal(callsOf(app, 'cancel').length, base + 1);
+  const n = callsOf(app, 'schedule').length;
+  app.click('[data-a="tadd"][data-v="15"]'); await app.flush();
+  assert.equal(callsOf(app, 'schedule').length, n + 1, 'reprogramado');
+  await app.advance(3000);
+  assert.equal(callsOf(app, 'cancel').length, base + 1, 'y no se vuelve a cancelar mientras falten más de 2 s');
+  app.close();
+});
+
+test('CA-6 y CA-15: con la pantalla bloqueada al acabar no suena la alarma de la app y los refuerzos se quedan; al desbloquear se limpian', async () => {
+  const app = await loadApp({ native: true });
+  await startRest(app);
+  const base = callsOf(app, 'cancel').length, vib0 = app.env.vibrations.length;   // confirmar la serie ya vibró una vez
+  await app.setVisibility('hidden');
+  await app.advance(restTimer(app).end - app.clock.now + 3000);   // el JS sigue vivo con la pantalla bloqueada
+  assert.equal(app.eval('S.active.timer.fired'), true);
+  assert.equal(app.beeps(), 0, 'no suena la alarma de la app: lo hace la notificación');
+  assert.equal(app.env.vibrations.length, vib0, 'ni vibra la app');
+  assert.equal(callsOf(app, 'cancel').length, base, 'los refuerzos siguen pendientes');
+  assert.equal(callsOf(app, 'removeAllDeliveredNotifications').length, 0);
+
+  await app.setVisibility('visible');
+  assert.equal(callsOf(app, 'removeAllDeliveredNotifications').length, 1, 'se retiran las entregadas');
+  assert.deepEqual(idsOf(callsOf(app, 'cancel').at(-1)), IDS, 'y se cancelan los refuerzos pendientes');
+  assert.equal(app.beeps(), 0, 'desbloquear no hace sonar la alarma de la app');
+  app.close();
+});
+
+test('CA-15b: con la página visible al acabar sí suena la alarma de la app', async () => {
+  const app = await loadApp({ native: true });
+  await startRest(app);
+  const vib0 = app.env.vibrations.length;
+  await app.advance(restTimer(app).end - app.clock.now + 100);
+  assert.ok(app.beeps() >= 1, 'suena en la app');
+  assert.ok(app.env.vibrations.length > vib0, 'y vibra');
+  app.close();
+});
+
+test('CA-9: si la página estuvo congelada y vuelve más de 5 s tarde, no suena', async () => {
+  const app = await loadApp({ native: true });
+  await startRest(app);
+  const T = restTimer(app);
+  await app.setVisibility('hidden');
+  app.clock.jump(T.end - app.clock.now + 20000);    // congelada: no corren los temporizadores
+  await app.setVisibility('visible');
+  assert.equal(app.beeps(), 0);
+  app.close();
+});
+
+test('CA-7: sin permiso no se programa nada; askNotify lo pide y, si se concede, se programa', async () => {
+  let app = await loadApp({ native: { permission: 'prompt', grantOnRequest: true } });
+  await startRest(app);   // empezar la sesión pide el permiso
+  assert.equal(callsOf(app, 'requestPermissions').length, 1);
+  assert.deepEqual(lastSchedule(app).map(x => x.id), IDS, 'concedido: se programa');
+  app.close();
+
+  app = await loadApp({ native: { permission: 'prompt', grantOnRequest: false } });
+  await startRest(app);
+  assert.equal(callsOf(app, 'requestPermissions').length, 1);
+  assert.equal(callsOf(app, 'schedule').length, 0, 'denegado: nada programado');
+  app.close();
+
+  app = await loadApp({ native: { permission: 'denied' } });
+  await startRest(app);
+  assert.equal(callsOf(app, 'schedule').length, 0);
+  app.close();
+});
+
+test('CA-8: con los avisos desactivados no se programa nada', async () => {
+  const app = await loadApp({ native: true, stored: { v: 1, settings: { notify: false } } });
+  await startRest(app);
+  assert.equal(callsOf(app, 'schedule').length, 0);
+  app.close();
+});
+
+test('CA-8b: el canal sigue a los interruptores de sonido y vibración', async () => {
+  const app = await loadApp({ native: true, stored: { v: 1, settings: { sound: false } } });
+  await startRest(app);
+  assert.ok(lastSchedule(app).every(x => x.channelId === 'descanso-v'));
+  app.close();
+});
+
+test('CA-12: en la web no hay llamadas nativas y los avisos del navegador funcionan como siempre', async () => {
+  const app = await loadApp();
+  await startRest(app);
+  assert.equal(app.native, null);
+  assert.ok(app.env.audios.length >= 1, 'la web mantiene el audio inaudible para seguir viva con la pantalla bloqueada');
+  await app.setVisibility('hidden');
+  await app.advance(restTimer(app).end - app.clock.now + 500);
+  assert.ok(app.env.notes.length >= 1, 'y avisa con la notificación del navegador');
+  app.close();
+});
